@@ -1,18 +1,12 @@
-# Obsidian Sample Plugin
+# Digital Gardener - Your GPT Agent in Obsidian
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+Thank you for checking out the Digital Gardener, a handy GPT agent that is built directly into Obsidian for you to control.
 
-This project uses Typescript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in Typescript Definition format, which contains TSDoc comments describing what it does.
+By setting up different prompt options, you can use ChatGPT APIs to make requests to different models for your different needs.
 
-**Note:** The Obsidian API is still in early alpha and is subject to change at any time!
+Use templates to output consistant templates of knowledge finding through the use of generative AI to speed up your process.
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+
 
 ## First time developing plugins?
 

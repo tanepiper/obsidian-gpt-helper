@@ -1,11 +1,11 @@
 {
-	"id": "gpt-helper",
-	"name": "GPT Helper",
-	"version": "1.0.0",
+	"id": "digital-gardener",
+	"name": "Digital Gardener",
+	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "A helper for Obsidian in GPT",
+	"description": "A AI Agent build directly into Obsidian, currently only supports OpenAI",
 	"author": "Tane Piper",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"authorUrl": "https://tane.dev",
+	"fundingUrl": "https://tane.dev",
 	"isDesktopOnly": false
 }
