@@ -5,7 +5,11 @@ import dataViewsText from "./../prompts/dataviewsText.md";
 /**
  * Settings for the GPT Helper plugin
  */
-export interface GPTHelperSettings {
+export interface DigitalGardenerSettings {
+	/**
+	 * Root Application Folder
+	 */
+	rootFolder: string;
 	/**
 	 * The users OpenAI API Key
 	 */
@@ -25,6 +29,11 @@ export interface GPTHelperSettings {
 	oaiTemperature: number;
 
 	/**
+	 * The maximum number of tokens to use when generating text
+	 */
+	oaiMaxTokens: number;
+
+	/**
 	 * The intro text to use when generating new files
 	 */
 	introText: string;
@@ -41,14 +50,33 @@ export interface GPTHelperSettings {
 	 */
 	dataViewText: string;
 
+	/**
+	 * The agent user name
+	 */
 	userName: string;
+	/**
+	 * The agent user pronouns
+	 */
 	userPronouns: string;
+	/**
+	 * The agent user bio
+	 */
 	userBio: string;
+	/**
+	 * The agent user languages
+	 */
 	userLanguages: string;
-	emojiLevel: number;
+
+	/**
+	 * The level of emoji usage
+	 */
+	emojiLevel: EmojiLevel;
 }
 
-export const DEFAULT_SETTINGS: GPTHelperSettings = {
+export type EmojiLevel = "none" | "low" | "medium" | "high";
+
+export const DEFAULT_SETTINGS: DigitalGardenerSettings = {
+	rootFolder: "",
 	userName: "",
 	userPronouns: "",
 	userBio: "",
@@ -57,11 +85,12 @@ export const DEFAULT_SETTINGS: GPTHelperSettings = {
 	openAIModel: "gpt-35-turbo",
 	outputPath: "gpt-garden",
 	oaiTemperature: 0.7,
+	oaiMaxTokens: 10000,
 	introText: introText.raw,
 	contentText: contentText.raw,
 	frontmatterText: frontMatterText.raw,
 	dataViewText: dataViewsText.raw,
-	emojiLevel: 1,
+	emojiLevel: "none",
 };
 
 export const AVAILABLE_MODELS = {

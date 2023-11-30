@@ -3,6 +3,11 @@ import { App, Modal, Setting } from "obsidian";
 export interface ModalCallOptions {
 	queryText: string;
 	createNewFile: boolean;
+	includeIntroText: boolean;
+	includeContentText: boolean;
+	includeFrontMatterText: boolean;
+	includeDataViewsText: boolean;
+	emojiLevel: number;
 }
 
 /**
@@ -10,6 +15,16 @@ export interface ModalCallOptions {
  * GPT using the agent prompts specified in the settings
  */
 export class DigitalGardenerModal extends Modal {
+	options: ModalCallOptions = {
+		createNewFile: true,
+		queryText: "",
+		includeIntroText: true,
+		includeContentText: true,
+		includeFrontMatterText: true,
+		includeDataViewsText: true,
+		emojiLevel: 0,
+	};
+
 	/**
 	 * The final query text to send to GPT
 	 */
@@ -23,7 +38,7 @@ export class DigitalGardenerModal extends Modal {
 	includeContentText: boolean;
 	includeFrontMatterText: boolean;
 	includeDataViewsText: boolean;
-	emojLevel: number;
+	emojiLevel: number;
 	/**
 	 * The callback to run when the modal is submitted
 	 */
@@ -57,7 +72,7 @@ export class DigitalGardenerModal extends Modal {
 			.addToggle((toggle) => {
 				toggle.setValue(true);
 				toggle.onChange((value) => {
-					this.includeFrontMatterText = value;
+					this.options.includeFrontMatterText = value;
 				});
 			});
 
@@ -67,7 +82,7 @@ export class DigitalGardenerModal extends Modal {
 			.addToggle((toggle) => {
 				toggle.setValue(true);
 				toggle.onChange((value) => {
-					this.includeFrontMatterText = value;
+					this.options.includeFrontMatterText = value;
 				});
 			});
 		new Setting(contentEl)
@@ -78,7 +93,7 @@ export class DigitalGardenerModal extends Modal {
 			.addToggle((toggle) => {
 				toggle.setValue(true);
 				toggle.onChange((value) => {
-					this.includeDataViewsText = value;
+					this.options.includeDataViewsText = value;
 				});
 			});
 		new Setting(contentEl)
@@ -88,9 +103,9 @@ export class DigitalGardenerModal extends Modal {
 				dropdown.addOption("0", "None");
 				dropdown.addOption("1", "Some");
 				dropdown.addOption("2", "🍒🔥💩");
-				dropdown.setValue(`${this.emojLevel}`)
+				dropdown.setValue(`${this.options.emojiLevel}`);
 				dropdown.onChange((value) => {
-					this.emojLevel = parseInt(value);
+					this.options.emojiLevel = parseInt(value);
 				});
 			});
 
@@ -100,7 +115,7 @@ export class DigitalGardenerModal extends Modal {
 			.addToggle((toggle) => {
 				toggle.setValue(true);
 				toggle.onChange((value) => {
-					this.createNewFile = value;
+					this.options.createNewFile = value;
 				});
 			});
 		new Setting(contentEl)
@@ -108,7 +123,7 @@ export class DigitalGardenerModal extends Modal {
 			.addTextArea((text) => {
 				text.setPlaceholder("Enter your query prompt here");
 				text.onChange((value) => {
-					this.queryText = value;
+					this.options.queryText = value;
 				});
 			});
 
@@ -124,10 +139,8 @@ export class DigitalGardenerModal extends Modal {
 				.setCta()
 				.onClick(async () => {
 					btn.setButtonText("Submitting...").setDisabled(true);
-					await this.onSubmit({
-						queryText: this.queryText,
-						createNewFile: this.createNewFile,
-					}).then(() => {
+					await this.onSubmit(this.options
+						).then(() => {
 						this.close();
 					});
 				})
