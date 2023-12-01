@@ -1,11 +1,13 @@
 {
 	"id": "digital-gardener",
-	"name": "Digital Gardener",
+	"name": "The Digital Gardener",
 	"version": "0.1.0",
 	"minAppVersion": "0.15.0",
-	"description": "A AI Agent build directly into Obsidian, currently only supports OpenAI",
+	"description": "Build GPT-like agents directly in your Obsidian vault",
 	"author": "Tane Piper",
 	"authorUrl": "https://tane.dev",
-	"fundingUrl": "https://tane.dev",
+	"fundingUrl": {
+		"GitHub Sponsor": "https://github.com/sponsors/tanepiper"
+	},
 	"isDesktopOnly": false
 }

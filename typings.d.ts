@@ -6,3 +6,9 @@ declare module '*.md' {
 	};
 	export default result;
   }
+
+  
+  declare module '*.svg' {
+    const content: string;
+    export default content;
+}

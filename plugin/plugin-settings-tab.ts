@@ -5,7 +5,7 @@ import {
 	Setting,
 	normalizePath,
 } from "obsidian";
-import { type GPTHelper } from "./plugin.js";
+import { type DigitalGardener } from "./plugin.js";
 import {
 	AVAILABLE_MODELS,
 	DEFAULT_SETTINGS,
@@ -19,13 +19,13 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 	/**
 	 * The plugin instance
 	 */
-	plugin: GPTHelper;
+	plugin: DigitalGardener;
 	/**
 	 *
 	 * @param app The Obsidian App
 	 * @param plugin The plugin instance
 	 */
-	constructor(app: App, plugin: GPTHelper) {
+	constructor(app: App, plugin: DigitalGardener) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

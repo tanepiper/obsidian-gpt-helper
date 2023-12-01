@@ -1,90 +1,75 @@
 # Digital Gardener - Your GPT Agent in Obsidian
 
-Thank you for checking out the Digital Gardener, a handy GPT agent that is built directly into Obsidian for you to control.
+**Version: 0.1.0**
 
-By setting up different prompt options, you can use ChatGPT APIs to make requests to different models for your different needs.
+Thank you for checking out the Digital Gardener 🧑🏼‍🌾 For Obsidian.
 
-Use templates to output consistant templates of knowledge finding through the use of generative AI to speed up your process.
+The Digital Gardener is an _in progress_ tool that connects Obsidian to OpenAI-compatible APIs that drive a set of tools that
+both simplfy the life of a user, and enable new forms of knowledge curation to be found and enabled.
 
+You can ask it to find new knowledge, or search existing knowledge to find new connections and properties.
 
+The agent is built upon some fixed queries, along with the future ability to add more customisation through
+your own agents and prompts. One of the key values of the digital gardener is to provide flexability when
+it comes to configuring how you interact with your agent.
 
-## First time developing plugins?
+## Plugin Settings
 
-Quick starting guide for new plugin devs:
+These are the current plugin settings, as the digital gardeners features expand this will change, please be aware if this
 
-- Check if [someone already developed a plugin for what you want](https://obsidian.md/plugins)! There might be an existing plugin similar enough that you can partner up with.
-- Make a copy of this repo as a template with the "Use this template" button (login to GitHub if you don't see it).
-- Clone your repo to a local development folder. For convenience, you can place this folder in your `.obsidian/plugins/your-plugin-name` folder.
-- Install NodeJS, then run `npm i` in the command line under your repo folder.
-- Run `npm run dev` to compile your plugin from `main.ts` to `main.js`.
-- Make changes to `main.ts` (or create new `.ts` files). Those changes should be automatically compiled into `main.js`.
-- Reload Obsidian to load the new version of your plugin.
-- Enable plugin in settings window.
-- For updates to the Obsidian API run `npm update` in the command line under your repo folder.
+| Setting Name         | Default Value    | Description                                                                               |
+| -------------------- | ---------------- | ----------------------------------------------------------------------------------------- |
+| OpenAI API Key       | `openAIAPIKey`   | The OpenAI API key to use for requests                                                    |
+| Default OpenAI Model | `openAIModel`    | Select the default OpenAI model to use for any requests (can be changed per request)      |
+| Temperature          | `oaiTemperature` | Enter the temperature to use when generating text                                         |
+| Max Tokens           | `oaiMaxTokens`   | The maximum number of tokens to use when generating text                                  |
+| Your Name            | `userName`       | What should I call you?                                                                   |
+| Pronouns             | `userPronouns`   | Your pronouns                                                                             |
+| Languages            | `userLanguages`  | What languages do you want to work in? Put in a comma-separated list                      |
+| User Bio             | `userBio`        | Enter a short bio about yourself, as much or as little as you like                        |
+| Root directory       | `rootFolder`     | Select a root directory for your Digital Garden, where all files and notes will be stored |
+| Emoji Level          | `emojiLevel`     | How many emojis should it use (None, Low, Some, High)                                     |
 
-## Releasing new releases
+## Features
 
-- Update your `manifest.json` with your new version number, such as `1.0.1`, and the minimum Obsidian version required for your latest release.
-- Update your `versions.json` file with `"new-plugin-version": "minimum-obsidian-version"` so older versions of Obsidian can download an older version of your plugin that's compatible.
-- Create new GitHub release using your new version number as the "Tag version". Use the exact version number, don't include a prefix `v`. See here for an example: https://github.com/obsidianmd/obsidian-sample-plugin/releases
-- Upload the files `manifest.json`, `main.js`, `styles.css` as binary attachments. Note: The manifest.json file must be in two places, first the root path of your repository and also in the release.
-- Publish the release.
+The current features are:
 
-> You can simplify the version bump process by running `npm version patch`, `npm version minor` or `npm version major` after updating `minAppVersion` manually in `manifest.json`.
-> The command will bump version in `manifest.json` and `package.json`, and add the entry for the new version to `versions.json`
+### Generate file from query
 
-## Adding your plugin to the community plugin list
+Give the agent a query and it will generate a new file in it's notes folder, the file will be named and may contain frontmatter properties with some tags and WikiLinks. In the dialog there are some options you can select, some come from the default values of the plugin.
 
-- Check https://github.com/obsidianmd/obsidian-releases/blob/master/plugin-review.md
-- Publish an initial version.
-- Make sure you have a `README.md` file in the root of your repo.
-- Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
+| Option Name              | Default Value   | Description                                                                             |
+| ------------------------ | --------------- | --------------------------------------------------------------------------------------- |
+| Personalise Request      | `true`          | Use the personalisation settings from the settings tab to give a more personal response |
+| Include Vault File Names | `true`          | Include an object in the query with all markdown file references and file names         |
+| Include Tags             | `true`          | Include a comma seperated list of all tags in the vault                                 |
+| OpenAI Model             | (from settings) | The OpenAI model to use for this request                                                |
+| Temperature              | (from settings) | The temperature setting to use when generating text                                     |
+| Max Tokens               | (from settings) | The maximum number of tokens to use when generating text                                |
+| Emoji Level              | (from settings) | How many emojis to use in the response (`none`, `low`, `medium`, `high`)                |
 
-## How to use
+### Generate file properties
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+Takes the contents of the currently opened file and creates frontmatter properties which are applied to the file
 
-## Manually installing the plugin
+### Generate Wiki Links
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+Takes the contents of the currently opened file, and a list of all files and tags in the vault - and generates a list of WikiLinks, with the reason and a confidence score.
 
-## Improve code quality with eslint (optional)
-- [ESLint](https://eslint.org/) is a tool that analyzes your code to quickly find problems. You can run ESLint against your plugin to find common bugs and ways to improve your code. 
-- To use eslint with this project, make sure to install eslint from terminal:
-  - `npm install -g eslint`
-- To use eslint to analyze this project use this command:
-  - `eslint main.ts`
-  - eslint will then create a report with suggestions for code improvement by file and line number.
-- If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
-  - `eslint .\src\`
+### Rename file from contents
 
-## Funding URL
+Get one or more filename suggestions for the currently open file and if selected rename the file to the response
 
-You can include funding URLs where people who use your plugin can financially support it.
+## Roadmap
 
-The simple way is to set the `fundingUrl` field to your link in your `manifest.json` file:
-
-```json
-{
-    "fundingUrl": "https://buymeacoffee.com"
-}
-```
-
-If you have multiple URLs, you can also do:
-
-```json
-{
-    "fundingUrl": {
-        "Buy Me a Coffee": "https://buymeacoffee.com",
-        "GitHub Sponsor": "https://github.com/sponsors",
-        "Patreon": "https://www.patreon.com/"
-    }
-}
-```
-
-## API Documentation
-
-See https://github.com/obsidianmd/obsidian-api
+-   [ ] Closer integration with Obsidian for system setup
+-   [ ] Standard format for Agent files and custom prompts in Obsidian that allows for more dynamic features
+-   [ ] Support different API endpoints than OpenAI
+-   [ ] Provide support for different models
+-   [ ] Provide better UI for sending requests
+-   [ ] Provide application flows that give the user more control over their interactions
+-   [ ] Better chat support for sustained conversations with agents
+-   [ ] Integrate agents with functions
+-   [ ] Support more file types for processing
+    [ ] Better state management
+-   [ ] A bunch more useful commands and views

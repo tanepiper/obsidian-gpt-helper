@@ -1,5 +1,4 @@
 import agentDigitalGardener from "../agents/digital-gardener.md";
-import newFileFromPrompt from '../prompts/page-content.md';
 import renameFileFromContents from '../prompts/rename-file.md';
 import generateProperties from '../prompts/generate-properties.md';
 import generateWikiLinks from '../prompts/generate-wiki-links.md';
@@ -62,7 +61,6 @@ export const agents = {
 
 export const prompts = {
 	renameFileFromContents: `${renameFileFromContents}`,
-	newFileFromPrompt: `${newFileFromPrompt}`,
 	generateProperties: `${generateProperties}`,
 	generateWikiLinks: `${generateWikiLinks}`,
 }

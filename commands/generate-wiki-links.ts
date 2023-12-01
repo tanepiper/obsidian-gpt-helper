@@ -1,59 +1,62 @@
 import { Notice } from "obsidian";
 import { agents, prompts } from "../lib/settings.js";
-import type GPTHelper from "../main.js";
+import type DigitalGardener from "../main.js";
+import generateWikiLinksPrompt from "./generate-wiki-links.md";
+
+interface WikiLink {
+	fileName: string;
+	filePath: string;
+	reason: string;
+	score: number;
+}
 
 /**
  * Rename a file from it's contents
  * @param plugin The parent plugin
  * @returns
  */
-export function generateWikiLinks(plugin: GPTHelper) {
+export function generateWikiLinks(plugin: DigitalGardener) {
 	return {
 		id: "dg-generate-wiki-links",
-		name: "Generate WikiLinks for current file",
+		name: "Append WikiLinks to current file",
 		checkCallback: async (checking: boolean) => {
 			const file = plugin.app?.workspace?.getActiveFile();
 			if (file?.path) {
 				if (!checking) {
-					const allMarkdownFiles = plugin.app.vault
-						.getMarkdownFiles()
-						.map((file) => file.path);
+					let prompt = `${agents.digitalGardener}\n\n`;
+					prompt += `${generateWikiLinksPrompt}\n\n`;
 
-					let systemPrompt = `${agents.digitalGardener}\n\n${prompts.generateWikiLinks}`;
-					systemPrompt += `\n\nThe following is a list of all markdown files in the current Obsidian vault:\n\n`;
-					systemPrompt += JSON.stringify(allMarkdownFiles, null, 2);
+					// We need all files if the use will also want tags, so lets do it anyway
+					const allMarkdownFiles =
+						plugin.app.vault.getMarkdownFiles();
 
-					const paths = file.path?.split("/") ?? [];
-					const currentFileName = paths.pop();
-					new Notice(
-						`🧑🏼‍🌾 Checking ${currentFileName} for new wikilinks`
+					const allMDFileNames = Object.fromEntries(
+						allMarkdownFiles.map((file) => [file.path, file.name])
 					);
+					prompt += `The following is a list of all markdown files in the current Obsidian vault:
+					${JSON.stringify(allMDFileNames, null, 2)}
+					When creating the content, create wikilinks to relevant files, these files exist in the list above
+					Obsidian's [[FILENAME]] WikiLinks to connect the content.`;
+
 					const contents = await plugin.app.vault.cachedRead(file);
 					const result = await plugin.openAI.requestJSON(
-						systemPrompt,
+						prompt,
 						contents,
-						plugin.settings.openAIModel
+						plugin.settings
 					);
 					if (!result?.wikiLinks) {
 						return false;
-					}
-					console.log(result.wikiLinks);
-					const wikiLinks = Object.entries(result.wikiLinks)
-						.map(([key, val]: [string, string]) => {
-							console.log(key, file, file.path.includes(key));
-							if (`/${file.path}` === key) {
-								return null;
+					} else if (result.wikiLinks.length > 0) {
+						let outputLinks = "";
+						const wikiLinks = result.wikiLinks.map(
+							(wikiLink: WikiLink) => {
+								const { fileName, filePath, reason, score } =
+									wikiLink;
+								outputLinks += `- [[${filePath}|${fileName}]] (Reason: ${reason}, Relevancy: ${score})\n`;
 							}
-							return `[[${key}|${val}]]`;
-						})
-						.filter((link) => link !== null);
-
-					await plugin.app.fileManager.processFrontMatter(
-						file,
-						(frontmatter) => {
-							Object.assign(frontmatter, { wikiLinks });
-						}
-					);
+						);
+						plugin.appendContentToActiveFile(outputLinks);
+					}
 				}
 				return true;
 			}

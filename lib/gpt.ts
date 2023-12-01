@@ -1,11 +1,7 @@
 import OpenAI from "openai";
-import { type ChatCompletionCreateParams } from "openai/resources";
-import { ModalCallOptions } from "../views/chat-modal";
+import { ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat/completions";
 import { DigitalGardenerSettings } from "./settings";
-import { json } from "stream/consumers";
-import { ChatCompletionCreateParamsBase, ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat/completions";
-import digitalGardener from "../agents/digital-gardener.md";
-import pagePrompt from '../prompts/page-content.md';
+import { error } from "console";
 
 export interface DGOpenAIClient {
 	/**
@@ -16,29 +12,46 @@ export interface DGOpenAIClient {
 	requestChat: (
 		system: string,
 		content: string,
-		model: string
+		settings: DigitalGardenerSettings
 	) => Promise<string>;
 
 	requestJSON: (
 		system: string,
 		content: string,
-		model: string
+		settings: DigitalGardenerSettings
 	) => Promise<Record<string, any>>;
 }
 
 const RUN_IN_BROWSER_FOR_OBSIDIAN = true;
 
+/**
+ * Create an internal OpenAI Client for interacting with the API for chats and JSON
+ * responses
+ * @param apiKey
+ * @returns
+ */
 export function createOpenAIClient(apiKey: string): DGOpenAIClient {
+	/**
+	 * OpenAI Client Instance
+	 */
 	const client = new OpenAI({
 		apiKey,
 		dangerouslyAllowBrowser: RUN_IN_BROWSER_FOR_OBSIDIAN,
 	});
 
+	/**
+	 * Generate a prompt for OpenAI to use for chat
+	 * @param system The system request to pass to OpenAI
+	 * @param content The user content to pass to OpenAI
+	 * @param model The model to use for the request
+	 * @param json If the response should be JSON
+	 * @returns A chat completion request object
+	 */
 	function generatePrompt(
 		system: string,
 		content: string,
-		model: string,
-		json = false,
+		settings: DigitalGardenerSettings,
+		json = false
 	): ChatCompletionCreateParamsNonStreaming {
 		const options: ChatCompletionCreateParamsNonStreaming = {
 			messages: [
@@ -48,9 +61,15 @@ export function createOpenAIClient(apiKey: string): DGOpenAIClient {
 				},
 				{ role: "user", content },
 			],
-			model,
+			model: settings.openAIModel,
 			stream: false,
 		};
+		if (settings.oaiTemperature) {
+			options.temperature = settings.oaiTemperature;
+		}
+		if (settings.oaiMaxTokens) {
+			options.max_tokens = settings.oaiMaxTokens;
+		}
 		if (json) {
 			options.response_format = { type: "json_object" };
 		}
@@ -58,24 +77,37 @@ export function createOpenAIClient(apiKey: string): DGOpenAIClient {
 		return options;
 	}
 
+	/**
+	 * Make a request to OpenAI for a JSON response
+	 * @param systemPrompt
+	 * @param userPrompt
+	 * @param model
+	 * @returns
+	 */
 	async function requestJSON(
-		system: string,
-		content: string,
-		model: string
+		systemPrompt: string,
+		userPrompt: string,
+		settings: DigitalGardenerSettings
 	): Promise<Record<string, any>> {
 		let result: Record<string, any> = {};
 		try {
-			const chatOptions = generatePrompt(system, content, model, true);
+			const chatOptions = generatePrompt(
+				systemPrompt,
+				userPrompt,
+				settings,
+				true
+			);
 			const response = await client.chat.completions.create(chatOptions);
 
 			if (response?.choices?.[0]?.message) {
 				const content = response?.choices?.[0]?.message?.content;
 				result = JSON.parse(content as string);
 			}
-		} catch (e) {
+		} catch (e: any) {
 			console.error(e);
 			result = {
-				error: `My apologies, I am having trouble fetching a response from OpenAI.  Please try again.`,
+				error: e.message,
+				message: `My apologies, I am having trouble fetching a response from OpenAI.  Please try again.`,
 			};
 		}
 
@@ -91,11 +123,11 @@ export function createOpenAIClient(apiKey: string): DGOpenAIClient {
 	async function requestChat(
 		system: string,
 		content: string,
-		model: string
+		settings: DigitalGardenerSettings
 	): Promise<string> {
 		let result = "";
 		try {
-			const chatOptions = generatePrompt(system, content, model);
+			const chatOptions = generatePrompt(system, content, settings);
 			const response = await client.chat.completions.create(chatOptions);
 
 			if (response?.choices?.[0]?.message) {
@@ -114,71 +146,4 @@ export function createOpenAIClient(apiKey: string): DGOpenAIClient {
 		requestChat,
 		requestJSON,
 	};
-}
-
-export function getFilenameFromContent(): string {
-	return `Based on this content, suggest a short filename under 50 characters that is valid for Obsidian - the filename can
-	any alphanumeric characters, dashes, underscores and spaces.  Please do not include the file extension.
-
-	You will return the response as a JSON object like this:
-
-	{
-		"filename": "my-filename"
-	}
-	`;
-}
-
-export function buildPrompt(
-	options: ModalCallOptions,
-	activePrompts: DigitalGardenerSettings
-) {
-
-	let prompt = `${digitalGardener}`;
-	prompt += `${pagePrompt}`;
-	console.log(prompt);
-	return prompt;
-	// let prompt = "";
-	// if (options.createNewFile) {
-	// 	prompt +=
-	// 		"You are creating a new file so please ensure you include the following prompts in your response:";
-	// }
-	// if (options.emojiLevel > 0) {
-	// 	prompt += "The user has selected a level of emoji usage of ";
-	// 	prompt +=
-	// 		activePrompts.emojiLevel === 2
-	// 			? "high - this means feel free to liberally use emojis in your response to make it more fun and engaging! 🎉"
-	// 			: "medium - this means the user is ok with some emoji in the response but not too many. 😊";
-	// } else {
-	// 	prompt +=
-	// 		"The user has selected that you use no emjois in your response, please keep this in mind when writing your response unless explicity asked by the user to give it";
-	// }
-	// if (activePrompts.userName) {
-	// 	prompt += "\n\n";
-	// 	prompt += `The user has asked that you address them as ${activePrompts.userName}. `;
-	// }
-	// if (activePrompts.userPronouns) {
-	// 	prompt += `The user has asked that you use the pronouns ${activePrompts.userPronouns}. `;
-	// }
-	// if (activePrompts.userLanguages) {
-	// 	prompt += `The user has asked that you use the following languages in responding: ${activePrompts.userLanguages}. `;
-	// }
-	// if (activePrompts.userBio) {
-	// 	prompt += `The user has given the following bio for you to use when considering responses to them: ${activePrompts.userBio}. `;
-	// }
-	// if (options.includeIntroText) {
-	// 	prompt += activePrompts.introText;
-	// }
-	// if (options.includeFrontMatterText) {
-	// 	prompt +=
-	// 		"The user has selected frontmatter so make sure you include some please";
-	// 	prompt += activePrompts.frontmatterText;
-	// }
-	// if (options.includeContentText) {
-	// 	prompt += activePrompts.contentText;
-	// }
-	// if (options.includeDataViewsText) {
-	// 	prompt += activePrompts.dataViewText;
-	// }
-
-	//return prompt;
 }
