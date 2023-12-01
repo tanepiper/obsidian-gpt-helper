@@ -1,12 +1,13 @@
-import { renameFileFromContents } from "commands/rename-file-from-contents.js";
-import { Editor, MarkdownView, Notice, Plugin } from "obsidian";
+import { Notice, Plugin } from "obsidian";
+import { generateFileProperties } from "../commands/generate-file-properties.js";
+import { generateWikiLinks } from "../commands/generate-wiki-links.js";
+import { newFileFromPrompt } from "../commands/new-file-user-prompt.js";
+import { renameFileFromContents } from "../commands/rename-file-from-contents.js";
+import { DGOpenAIClient, createOpenAIClient } from "../lib/gpt.js";
 import {
-	DGOpenAIClient,
-	buildPrompt,
-	createOpenAIClient,
-} from "../lib/gpt.js";
-import { DEFAULT_SETTINGS, type DigitalGardenerSettings } from "../lib/settings.js";
-import { DigitalGardenerModal, ModalCallOptions } from "../views/chat-modal.js";
+	DEFAULT_SETTINGS,
+	type DigitalGardenerSettings,
+} from "../lib/settings.js";
 import { GPTHelperSettingTab } from "./plugin-settings-tab.js";
 
 export class GPTHelper extends Plugin {
@@ -23,7 +24,7 @@ export class GPTHelper extends Plugin {
 	/**
 	 * The root output path for the plugin to use to work with files
 	 */
-	outputPath: string;
+	rootFolder: string;
 
 	/**
 	 * The status bar item element
@@ -40,81 +41,65 @@ export class GPTHelper extends Plugin {
 	 */
 	agentsPath: string;
 
+	/**
+	 * The path to the agents folder
+	 */
+	promptsPath: string;
+
 	async onload() {
 		await this.loadSettings();
 
-		this.outputPath = `${this.app.vault.getRoot().path}/${
+		this.rootFolder = `${this.app.vault.getRoot().path}${
 			this.settings.rootFolder
 		}`;
 
-		this.notesPath = `${this.outputPath}/notes`;
-		this.agentsPath = `${this.outputPath}/agents`;
+		this.notesPath = `${this.rootFolder}/notes`;
+		this.agentsPath = `${this.rootFolder}/agents`;
+		this.promptsPath = `${this.rootFolder}/prompts`;
 
-		if (!this.app.vault.adapter.exists(this.outputPath)) {
-			await this.app.vault.createFolder(this.outputPath);
+		if (!this.app.vault.adapter.exists(this.rootFolder)) {
+			await this.app.vault.createFolder(this.rootFolder);
 			await this.app.vault.createFolder(this.notesPath); // Create a notes folder
 			await this.app.vault.createFolder(this.agentsPath); // Create an agents folder
+			await this.app.vault.createFolder(this.promptsPath);
 		}
 
 		this.openAI = createOpenAIClient(this.settings.openAIAPIKey);
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		this.statusBarItemEl = this.addStatusBarItem();
-		this.statusBarItemEl.setText("GPT Helper: Waiting...");
-
 		if (!this.settings.openAIAPIKey) {
 			new Notice(
-				"GPT Helper: To use this tool you require an OpenAI API Key. Please enter your API Key in the settings"
+				"🧑🏼‍🌾 No OpenAI API Key set\nplease set one in the settings"
 			);
-			this.statusBarItemEl.setText("GPT Helper: No API Key");
+			this.statusBarItemEl.setText("🧑🏼‍🌾 No API Key");
 			return;
 		}
 
-		this.addCommand(renameFileFromContents(this, this.settings) as any);
+		this.statusBarItemEl.setText(`🧑🏼‍🌾 ${this.settings.openAIModel}`);
 
-		this.addCommand({
-			id: "dg-file_from_prompt",
-			name: "Generate new file from prompt",
-			callback: () => {
-				new DigitalGardenerModal(
-					this.app,
-					async (options: ModalCallOptions) => {
-						const prompt = buildPrompt(options, this.settings);
+		this.addCommand(renameFileFromContents(this) as any);
+		this.addCommand(newFileFromPrompt(this) as any);
+		this.addCommand(generateFileProperties(this) as any);
+		this.addCommand(generateWikiLinks(this) as any);
 
-						const result = await this.openAI.requestChat(
-							prompt,
-							options.queryText,
-							this.settings.openAIModel
-						);
-						const filename = `${
-							this.notesPath
-						}/gpt-${Date.now()}.md`;
-						this.app.vault.create(filename, result);
-						new Notice(
-							`GPT Helper: ${filename} created with ${result.length} characters in length}`
-						);
-					}
-				).open();
-			},
-		});
-
-		this.addCommand({
-			id: "gpt-helper_from_selection",
-			name: "Generate new file text selection",
-			editorCallback: async (editor: Editor, view: MarkdownView) => {
-				const sel = editor.getSelection();
-				const result = await this.openAI.requestChat(
-					this.settings.introText,
-					sel,
-					this.settings.openAIModel
-				);
-				const filename = `${this.outputPath}/gpt-${Date.now()}.md`;
-				this.app.vault.create(filename, result);
-				new Notice(
-					`GPT Helper: ${filename} created with ${result.length} characters in length}`
-				);
-			},
-		});
+		// this.addCommand({
+		// 	id: "gpt-helper_from_selection",
+		// 	name: "Generate new file text selection",
+		// 	editorCallback: async (editor: Editor, view: MarkdownView) => {
+		// 		const sel = editor.getSelection();
+		// 		const result = await this.openAI.requestChat(
+		// 			this.settings.introText,
+		// 			sel,
+		// 			this.settings.openAIModel
+		// 		);
+		// 		const filename = `${this.rootFolder}/gpt-${Date.now()}.md`;
+		// 		this.app.vault.create(filename, result);
+		// 		new Notice(
+		// 			`GPT Helper: ${filename} created with ${result.length} characters in length}`
+		// 		);
+		// 	},
+		// });
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new GPTHelperSettingTab(this.app, this));

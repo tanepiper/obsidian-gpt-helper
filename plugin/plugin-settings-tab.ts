@@ -1,4 +1,10 @@
-import { App, Notice, PluginSettingTab, Setting } from "obsidian";
+import {
+	App,
+	Notice,
+	PluginSettingTab,
+	Setting,
+	normalizePath,
+} from "obsidian";
 import { type GPTHelper } from "./plugin.js";
 import {
 	AVAILABLE_MODELS,
@@ -55,13 +61,13 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "🧑🏼‍🌾 Digital Gardener" });
-		containerEl.createEl("h3", { text: "A GPT built into Obsidian" });
+		containerEl.createEl("h1", { text: "🧑🏼‍🌾 Digital Gardener" });
+		containerEl.createEl("p", { text: "Built GPT-like agents directly in Obsidian" });
 
 		/**
 		 * OpenAI Setting Section
 		 */
-		containerEl.createEl("h3", { text: "OpenAI Settings" });
+		containerEl.createEl("h2", { text: "OpenAI Settings" });
 
 		/**
 		 * OpenAI API Key
@@ -69,7 +75,7 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName("OpenAI API Key")
 			.setDesc(
-				"Enter the OpenAI API key you wish to use (please note you will be charged by OpenAI for any requests made)"
+				"The OpenAI API key to use for requests"
 			)
 			.addText((text) =>
 				text
@@ -134,7 +140,7 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 		/**
 		 * About You Section
 		 */
-		containerEl.createEl("h3", { text: "About you" });
+		containerEl.createEl("h2", { text: "About you" });
 
 		/**
 		 * User Name
@@ -213,23 +219,7 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 		/**
 		 * Agent Settings
 		 */
-		containerEl.createEl("h3", { text: "Agent Settings" });
-
-		/**
-		 * Digital Gardener Root Folder
-		 */
-		new Setting(containerEl)
-			.setName("Digital Gardener Root Folder")
-			.setDesc("Enter the folder to make the root of your Digital Garden")
-			.addText((text) =>
-				text
-					.setPlaceholder("Enter a folder name")
-					.setValue(this.plugin.settings.outputPath)
-					.onChange(async (value) => {
-						this.plugin.settings.outputPath = value;
-						await this.plugin.saveSettings();
-					})
-			);
+		containerEl.createEl("h2", { text: "Agent Settings" });
 
 		new Setting(containerEl)
 			.setName("Root directory")
@@ -239,6 +229,7 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 			)
 			.addDropdown(async (dropdown) => {
 				const folders = await this.getSortedFolderList();
+				dropdown.addOption("none", "None");
 				dropdown.addOptions(Object.fromEntries(folders));
 				dropdown.setValue(this.plugin.settings.rootFolder);
 				dropdown.onChange(async (value) => {
@@ -247,14 +238,13 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 				});
 			})
 			.addButton(async (button) => {
-				button
-				.setButtonText("Use")
-				.setDisabled(await this.app.vault.adapter.exists(`${this.plugin.settings.rootFolder}/agents`))
-				.onClick(async () => {
+				button.setButtonText("Use").onClick(async () => {
 					const { rootFolder } = this.plugin.settings;
-					const agentPath = `${rootFolder}/agents`;
-					const notesPath = `${rootFolder}/notes`;
-					const promptsPath = `${rootFolder}/prompts`;
+					const agentPath = normalizePath(`${rootFolder}/agents`);
+					const notesPath = normalizePath(`${rootFolder}/notes`);
+					const promptsPath = normalizePath(`${rootFolder}/prompts`);
+
+					console.log(agentPath, notesPath, promptsPath);
 
 					let message = `Creating Digital Garden at ${rootFolder}`;
 					if (!this.app.vault.adapter.exists(agentPath)) {
@@ -271,7 +261,7 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 					}
 					new Notice(message);
 				});
-			})
+			});
 		/**
 		 * Emoji Level
 		 */
@@ -279,110 +269,15 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 			.setName("Emoji Level?")
 			.setDesc("How many emojis should it use 🤔")
 			.addDropdown((dropdown) => {
+				dropdown.setValue(this.plugin.settings.emojiLevel);
 				dropdown.addOption("none", "None");
 				dropdown.addOption("low", "⬇️ Low");
 				dropdown.addOption("medium", "🎉 Some");
 				dropdown.addOption("high", "🍒🔥💩");
-				dropdown.setValue(this.plugin.settings.emojiLevel);
 				dropdown.onChange(async (value) => {
 					this.plugin.settings.emojiLevel = value as EmojiLevel;
 					await this.plugin.saveSettings();
 				});
 			});
-
-		/**
-		 * Prompts Section
-		 */
-
-		/**
-		 * Intro Text
-		 */
-		new Setting(containerEl)
-			.setName("Agent Introductory Text")
-			.setDesc(
-				"This is the introductory text that will be used when sending all agent requests"
-			)
-			.addTextArea((text) =>
-				text
-					.setPlaceholder(
-						"Enter the introductory text for your agent"
-					)
-					.setValue(this.plugin.settings.introText)
-					.onChange(async (value) => {
-						this.plugin.settings.introText = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("Context Text")
-			.setDesc(
-				"This is the text to define how you prefer your markdow content to be generated"
-			)
-			.addTextArea((text) =>
-				text
-					.setPlaceholder(
-						"Enter the introductory text for your agent"
-					)
-					.setValue(this.plugin.settings.contentText)
-					.onChange(async (value) => {
-						this.plugin.settings.contentText = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("Frontmatter Text")
-			.setDesc(
-				"This is the text sent to define the frontmatter of your markdown files is created"
-			)
-			.addTextArea((text) =>
-				text
-					.setPlaceholder(
-						"Enter the introductory text for your agent"
-					)
-					.setValue(this.plugin.settings.frontmatterText)
-					.onChange(async (value) => {
-						this.plugin.settings.frontmatterText = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("DataView Text")
-			.setDesc(
-				"This is the text sent to define the dataview of your markdown files is created"
-			)
-			.addTextArea((text) =>
-				text
-					.setPlaceholder(
-						"Enter the introductory text for your agent"
-					)
-					.setValue(this.plugin.settings.dataViewText)
-					.onChange(async (value) => {
-						this.plugin.settings.dataViewText = value;
-						await this.plugin.saveSettings();
-					})
-			);
-
-		new Setting(containerEl)
-			.setName("Reset To Default Prompts")
-			.setDesc("Reset to all default prompts")
-			.addButton((button) =>
-				button.setButtonText("Reset").onClick(async () => {
-					this.plugin.settings.introText = DEFAULT_SETTINGS.introText;
-					this.plugin.settings.contentText =
-						DEFAULT_SETTINGS.contentText;
-					this.plugin.settings.frontmatterText =
-						DEFAULT_SETTINGS.frontmatterText;
-					this.plugin.settings.dataViewText =
-						DEFAULT_SETTINGS.dataViewText;
-					await this.plugin.saveSettings();
-					new Notice(
-						"Prompts reset to default, please reload this page to see changes"
-					);
-					this.hide();
-				})
-			);
 	}
 }

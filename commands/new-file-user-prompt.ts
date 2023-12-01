@@ -1,42 +1,52 @@
 import { Notice } from "obsidian";
-import { DigitalGardenerModal, type ModalCallOptions } from "../views/chat-modal.js";
+import {
+	DigitalGardenerModal,
+	type ModalCallOptions,
+} from "views/chat-modal.js";
+import { agents, prompts } from "../lib/settings.js";
+import GPTHelper from "../main.js";
 
 /**
- * Creates a new file from the user prompt in Obsidian
- * @returns 
+ * Rename a file from it's contents
+ * @param plugin The parent plugin
+ * @returns
  */
-export default function newFileUserPrompt() {
+export function newFileFromPrompt(plugin: GPTHelper) {
 	return {
-		id: "gpt-helper_file_from_prompt",
-		name: "Generate new file from prompt",
-		callback: () => {
-			new DigitalGardenerModal(this.app, async (options: ModalCallOptions) => {
-				this.updateStatusBar();
-				const timerId = this.registerInterval(
-					window.setInterval(() => this.updateStatusBar(), 1000)
-				);
-				const result = await this.openAI.requestChat(
-					this.settings.introText,
-					options.queryText,
-					this.settings.openAIModel
-				);
-				//if (!markdownView) {
-				const filename = `${this.outputPath}/gpt-${Date.now()}.md`;
-				this.app.vault.create(filename, result);
-				new Notice(
-					`GPT Helper: ${filename} created with ${result.length} characters in length}`
-				);
-				// } else if (editor) {
-				// 	editor.replaceRange(
-				// 		`\n\n${result}\n\n`,
-				// 		editor.getCursor()
-				// 	);
-				// }
-				window.clearInterval(timerId);
-				this.statusBarItemEl.setText(
-					`GPT Helper: Done in ${this.time}s`
-				);
-			}).open();
+		id: "dg-new-file-from-prompt",
+		name: "New file from prompt",
+		callback: async () => {
+			new DigitalGardenerModal(
+				plugin,
+				async (options: ModalCallOptions) => {
+					const allMarkdownFiles = plugin.app.vault
+						.getMarkdownFiles()
+						.map((file) => file.name);
+
+					let prompt = `${agents.digitalGardener}\n\n${prompts.newFileFromPrompt}\n\n`;
+					prompt += `The following is a list of all markdown files in the current Obsidian vault:
+
+					${allMarkdownFiles.join("\n")}
+
+					When creating the content, if you find any related content names, you can use
+					Obsidian's [[FILENAME]] WikiLinks to connect the content.`;
+
+					const result = await plugin.openAI.requestJSON(
+						prompt,
+						`${options.userQuery}`,
+						plugin.settings.openAIModel
+					);
+
+					let output = "";
+					if (result?.frontmatterRaw) {
+						output += `${result.frontmatterRaw}\n\n`;
+					}
+					output += result.content;
+					const filename = `${plugin.notesPath}/${result.title}.md`;
+					plugin.app.vault.create(filename, output);
+					new Notice(`🧑🏼‍🌾 New file\n${result.title}`, 0);
+				}
+			).open();
 		},
 	};
 }
