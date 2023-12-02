@@ -1,149 +1,78 @@
 import OpenAI from "openai";
 import { ChatCompletionCreateParamsNonStreaming } from "openai/resources/chat/completions";
 import { DigitalGardenerSettings } from "./settings";
-import { error } from "console";
+import { Chat } from "openai/resources";
 
 export interface DGOpenAIClient {
-	/**
-	 * Instance of the OpenAI Client
-	 */
-	client: OpenAI;
-
-	requestChat: (
-		system: string,
-		content: string,
-		settings: DigitalGardenerSettings
-	) => Promise<string>;
-
-	requestJSON: (
-		system: string,
-		content: string,
-		settings: DigitalGardenerSettings
-	) => Promise<Record<string, any>>;
+    client: OpenAI;
+	getChatHistory: (filePath: string) => Chat[];
+	addToChatHistory: (filePath: string, content: Chat) => void;
+    requestChat: (system: string, content: string, settings: DigitalGardenerSettings) => Promise<string>;
+    requestJSON: (system: string, content: string, settings: DigitalGardenerSettings) => Promise<Record<string, any>>;
 }
 
 const RUN_IN_BROWSER_FOR_OBSIDIAN = true;
+const DEFAULT_ERROR_MESSAGE = "My apologies, I am having trouble fetching a response from OpenAI. Please try again.";
 
 /**
- * Create an internal OpenAI Client for interacting with the API for chats and JSON
- * responses
- * @param apiKey
- * @returns
+ * Create an internal OpenAI Client for interacting with the API for chats and JSON responses
  */
 export function createOpenAIClient(apiKey: string): DGOpenAIClient {
-	/**
-	 * OpenAI Client Instance
-	 */
-	const client = new OpenAI({
-		apiKey,
-		dangerouslyAllowBrowser: RUN_IN_BROWSER_FOR_OBSIDIAN,
-	});
 
-	/**
-	 * Generate a prompt for OpenAI to use for chat
-	 * @param system The system request to pass to OpenAI
-	 * @param content The user content to pass to OpenAI
-	 * @param model The model to use for the request
-	 * @param json If the response should be JSON
-	 * @returns A chat completion request object
-	 */
-	function generatePrompt(
-		system: string,
-		content: string,
-		settings: DigitalGardenerSettings,
-		json = false
-	): ChatCompletionCreateParamsNonStreaming {
-		const options: ChatCompletionCreateParamsNonStreaming = {
-			messages: [
-				{
-					role: "system",
-					content: system,
-				},
-				{ role: "user", content },
-			],
-			model: settings.openAIModel,
-			stream: false,
-		};
-		if (settings.oaiTemperature) {
-			options.temperature = settings.oaiTemperature;
-		}
-		if (settings.oaiMaxTokens) {
-			options.max_tokens = settings.oaiMaxTokens;
-		}
-		if (json) {
-			options.response_format = { type: "json_object" };
-		}
+	const chatHistories: Record<string, Chat[]> = {};
 
-		return options;
-	}
+	function getChatHistory(filePath: string): Chat[] {
+        return chatHistories[filePath] ?? [];
+    }
 
-	/**
-	 * Make a request to OpenAI for a JSON response
-	 * @param systemPrompt
-	 * @param userPrompt
-	 * @param model
-	 * @returns
-	 */
-	async function requestJSON(
-		systemPrompt: string,
-		userPrompt: string,
-		settings: DigitalGardenerSettings
-	): Promise<Record<string, any>> {
-		let result: Record<string, any> = {};
-		try {
-			const chatOptions = generatePrompt(
-				systemPrompt,
-				userPrompt,
-				settings,
-				true
-			);
-			const response = await client.chat.completions.create(chatOptions);
+    function addToChatHistory(filePath: string, content: Chat) {
+        if (!chatHistories[filePath]) {
+            chatHistories[filePath] = [];
+        }
+        chatHistories[filePath].push(content);
+    }
+    const client = new OpenAI({
+        apiKey,
+        dangerouslyAllowBrowser: RUN_IN_BROWSER_FOR_OBSIDIAN,
+    });
 
-			if (response?.choices?.[0]?.message) {
-				const content = response?.choices?.[0]?.message?.content;
-				result = JSON.parse(content as string);
-			}
-		} catch (e: any) {
-			console.error(e);
-			result = {
-				error: e.message,
-				message: `My apologies, I am having trouble fetching a response from OpenAI.  Please try again.`,
-			};
-		}
+	
 
-		return result;
-	}
+    function generatePrompt(system: string, content: string, settings: DigitalGardenerSettings, json = false): ChatCompletionCreateParamsNonStreaming {
+        const options: ChatCompletionCreateParamsNonStreaming = {
+            messages: [{ role: "system", content: system }, { role: "user", content }],
+            model: settings.openAIModel,
+            stream: false,
+            temperature: settings.oaiTemperature ?? 0.5,
+            max_tokens: settings.oaiMaxTokens ?? 150,
+            response_format: json ? { type: "json_object" } : undefined,
+        };
+        return options;
+    }
 
-	/**
-	 * Request a chat response from OpenAI, if there is an error in fetching
-	 * the response, return an empty string for the result to be handled
-	 * @param content
-	 * @returns
-	 */
-	async function requestChat(
-		system: string,
-		content: string,
-		settings: DigitalGardenerSettings
-	): Promise<string> {
-		let result = "";
-		try {
-			const chatOptions = generatePrompt(system, content, settings);
-			const response = await client.chat.completions.create(chatOptions);
+    async function requestJSON(system: string, content: string, settings: DigitalGardenerSettings): Promise<Record<string, any>> {
+        try {
+            const chatOptions = generatePrompt(system, content, settings, true);
+            const response = await client.chat.completions.create(chatOptions);
+            return response?.choices?.[0]?.message
+                ? JSON.parse(response.choices[0].message.content as string)
+                : {};
+        } catch (e: any) {
+            console.error("Error in requestJSON:", e);
+            return { error: e.message || DEFAULT_ERROR_MESSAGE };
+        }
+    }
 
-			if (response?.choices?.[0]?.message) {
-				result = response?.choices?.[0]?.message.content as string;
-			}
-		} catch (e) {
-			console.error(e);
-			result = `My apologies, I am having trouble fetching a response from OpenAI.  Please try again.`;
-		}
+    async function requestChat(system: string, content: string, settings: DigitalGardenerSettings): Promise<string> {
+        try {
+            const chatOptions = generatePrompt(system, content, settings);
+            const response = await client.chat.completions.create(chatOptions);
+            return response?.choices?.[0]?.message?.content as string || '';
+        } catch (e: any) {
+            console.error("Error in requestChat:", e);
+            return e.message || DEFAULT_ERROR_MESSAGE;
+        }
+    }
 
-		return result;
-	}
-
-	return {
-		client,
-		requestChat,
-		requestJSON,
-	};
+    return { client, requestChat, requestJSON, getChatHistory, addToChatHistory };
 }

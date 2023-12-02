@@ -3,11 +3,11 @@ import { Command, Notice } from "obsidian";
 import {
 	DigitalGardenerModal,
 	type ModalCallOptions,
-} from "views/chat-modal.js";
+} from "modals/chat-modal.js";
 import { createEmojiLevelSetting } from "../lib/dynamic-prompts";
 import { agents } from "../lib/settings.js";
 import DigitalGardener from "../main.js";
-import { DGMessageModal } from "../views/simple-modal.js";
+import { DGMessageModal } from "../modals/simple-modal.js";
 import generateFileFromQueryPrompt from "./generate-file-from-query.md";
 
 /**
@@ -16,6 +16,9 @@ import generateFileFromQueryPrompt from "./generate-file-from-query.md";
  * @returns
  */
 export function newFileFromPrompt(plugin: DigitalGardener): Command {
+
+	const settings = plugin.state.getSettings();
+
 	const command: Command = {
 		id: "dg-generate-file-from-query",
 		name: "Generate New File From Query",
@@ -30,10 +33,10 @@ export function newFileFromPrompt(plugin: DigitalGardener): Command {
 					prompt += `Today's date: ${new Date().toLocaleDateString()}\n\n`;
 					if (options.includePersonalisation) {
 						prompt += `The user has requested that you take the following personal information into account when generating the content:\n\n`;
-						prompt += `Name: ${plugin.settings.userName}\n`;
-						prompt += `Pronouns: ${plugin.settings.userPronouns}\n`;
-						prompt += `Prefered Language: ${plugin.settings.userLanguages}\n`;
-						prompt += `Biograph: ${plugin.settings.userBio}\n\n`;
+						prompt += `Name: ${settings.userName}\n`;
+						prompt += `Pronouns: ${settings.userPronouns}\n`;
+						prompt += `Prefered Language: ${settings.userLanguages}\n`;
+						prompt += `Biograph: ${settings.userBio}\n\n`;
 					}
 					prompt += `${createEmojiLevelSetting(
 						options.emojiLevel
@@ -74,7 +77,7 @@ export function newFileFromPrompt(plugin: DigitalGardener): Command {
 					const result = await plugin.openAI.requestJSON(
 						prompt,
 						`${options.userQuery}`,
-						plugin.settings
+						settings
 					);
 
 					if (result?.error) {

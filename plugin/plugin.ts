@@ -1,4 +1,4 @@
-import { Notice, Plugin } from "obsidian";
+import { Notice, Plugin, WorkspaceLeaf } from "obsidian";
 import { generateFileProperties } from "../commands/generate-file-properties.js";
 import { generateWikiLinks } from "../commands/generate-wiki-links.js";
 import { newFileFromPrompt } from "../commands/generate-file-from-query.js";
@@ -9,8 +9,12 @@ import {
 	type DigitalGardenerSettings,
 } from "../lib/settings.js";
 import { GPTHelperSettingTab } from "./plugin-settings-tab.js";
+import { DGChatAgentView, DG_CHAT_AGENT_VIEW } from "views/agent-view.js";
+import { DGStateManager } from "./state.js";
 
 export class DigitalGardener extends Plugin {
+	state: DGStateManager;
+
 	/**
 	 * The instance settings for the plugin
 	 */
@@ -52,21 +56,32 @@ export class DigitalGardener extends Plugin {
 	promptsPath: string;
 
 	async onload() {
+		this.state = new DGStateManager(this, DEFAULT_SETTINGS);
+		await this.state.load();
 		this.statusBarItemEl = this.addStatusBarItem();
 
+		this.registerView(
+			DG_CHAT_AGENT_VIEW,
+			(leaf) => new DGChatAgentView(leaf, this)
+		);
+
 		// Do initial setup routines
-		await this.loadSettings();
 		await this.setupFolders();
 
-		if (!this.settings.openAIAPIKey) {
+		const { openAIAPIKey } = this.state.settings;
+
+		if (!openAIAPIKey) {
 			new Notice(
 				"🧑🏼‍🌾 Digital Gardener Error:\n\nNo OpenAI API Key Set, please update this in Obsidian plugin settings"
 			);
 			this.statusBarItemEl.setText("🧑🏼‍🌾 No API Key");
 			return;
 		}
-		this.openAI = createOpenAIClient(this.settings.openAIAPIKey);
+		this.openAI = createOpenAIClient(openAIAPIKey);
 		this.updateDefaultStatusText();
+		this.addRibbonIcon("bot", "Digital Gardener Chat", () => {
+			this.activateView(DG_CHAT_AGENT_VIEW);
+		});
 
 		/**
 		 * Commands
@@ -84,24 +99,6 @@ export class DigitalGardener extends Plugin {
 		// Generate WikiLinks
 		this.addCommand(generateWikiLinks(this) as any);
 
-		// this.addCommand({
-		// 	id: "gpt-helper_from_selection",
-		// 	name: "Generate new file text selection",
-		// 	editorCallback: async (editor: Editor, view: MarkdownView) => {
-		// 		const sel = editor.getSelection();
-		// 		const result = await this.openAI.requestChat(
-		// 			this.settings.introText,
-		// 			sel,
-		// 			this.settings.openAIModel
-		// 		);
-		// 		const filename = `${this.rootFolder}/gpt-${Date.now()}.md`;
-		// 		this.app.vault.create(filename, result);
-		// 		new Notice(
-		// 			`GPT Helper: ${filename} created with ${result.length} characters in length}`
-		// 		);
-		// 	},
-		// });
-
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new GPTHelperSettingTab(this.app, this));
 	}
@@ -109,32 +106,11 @@ export class DigitalGardener extends Plugin {
 	onunload() {}
 
 	/**
-	 * Load the settings data from the plugin folder for the current user
-	 */
-	async loadSettings(): Promise<void> {
-		const loadedSettings = await this.loadData();
-		if (Object.keys(loadedSettings).length === 0) {
-			this.settings = DEFAULT_SETTINGS;
-			return;
-		}
-		this.settings = { ...this.settings, ...loadedSettings };
-		this.updateDefaultStatusText();
-	}
-
-	/**
-	 * Save the settings data to the plugin folder for the current user
-	 */
-	async saveSettings() {
-		await this.saveData(this.settings);
-		this.updateDefaultStatusText();
-	}
-
-	/**
 	 * Get the paths for all the app folders and if they don't exist, create them
 	 */
 	async setupFolders() {
 		this.rootFolder = `${this.app.vault.getRoot().path}${
-			this.settings.rootFolder
+			this.state.settings.rootFolder
 		}`;
 		if (!this.app.vault.adapter.exists(this.rootFolder)) {
 			await this.app.vault.createFolder(this.rootFolder);
@@ -182,10 +158,10 @@ export class DigitalGardener extends Plugin {
 
 	updateDefaultStatusText(inProgressText = "") {
 		const defaultStatusText = [
-			`🧑🏼‍🌾 ${this.settings?.openAIModel ?? "No Model Set"}`,
-			`🔥 ${this.settings?.oaiTemperature ?? "No Temperature Set"}`,
+			`🧑🏼‍🌾 ${this.state.settings.openAIModel ?? "No Model Set"}`,
+			`🔥 ${this.state.settings.oaiTemperature ?? "No Temperature Set"}`,
 			`🔢 ${
-				this.formatNumberWithK(this.settings?.oaiMaxTokens) ??
+				this.formatNumberWithK(this.state.settings.oaiMaxTokens) ??
 				"No Max Tokens Set"
 			}`,
 		];
@@ -194,5 +170,25 @@ export class DigitalGardener extends Plugin {
 		this.defaultStatusText = defaultStatusText.join(" ");
 
 		this.statusBarItemEl.setText(this.defaultStatusText);
+	}
+
+	async activateView(viewType: string) {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null = null;
+		const leaves = workspace.getLeavesOfType(viewType);
+
+		if (leaves.length > 0) {
+			// A leaf with our view already exists, use that
+			leaf = leaves[0];
+		} else {
+			// Our view could not be found in the workspace, create a new leaf
+			// in the right sidebar for it
+			leaf = workspace.getRightLeaf(false);
+			await leaf.setViewState({ type: viewType, active: true });
+		}
+
+		// "Reveal" the leaf in case it is in a collapsed sidebar
+		workspace.revealLeaf(leaf);
 	}
 }

@@ -1,14 +1,16 @@
 import { Notice } from "obsidian";
-import { agents, prompts } from "../lib/settings.js";
+import { agents } from "../lib/settings.js";
 import type DigitalGardener from "../main.js";
 import generateFilePropertiesPrompt from "./generate-file-properties.md";
-import { DGMessageModal } from "views/simple-modal.js";
+import { DGMessageModal } from "../modals/simple-modal.js";
 /**
  * Rename a file from it's contents
  * @param plugin The parent plugin
  * @returns
  */
 export function generateFileProperties(plugin: DigitalGardener) {
+	const settings = plugin.state.getSettings();
+
 	return {
 		id: "dg-generate-file-properties",
 		name: "Generate properties for current file",
@@ -30,7 +32,7 @@ export function generateFileProperties(plugin: DigitalGardener) {
 					const result = await plugin.openAI.requestJSON(
 						prompt,
 						contents,
-						plugin.settings
+						settings
 					);
 
 					if (!result?.frontmatter) {

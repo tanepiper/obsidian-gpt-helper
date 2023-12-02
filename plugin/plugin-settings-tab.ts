@@ -80,10 +80,10 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 			.addText((text) =>
 				text
 					.setPlaceholder("sa-")
-					.setValue(this.plugin.settings.openAIAPIKey)
+					.setValue(this.plugin.state.settings.openAIAPIKey)
 					.onChange(async (value) => {
-						this.plugin.settings.openAIAPIKey = value;
-						await this.plugin.saveSettings();
+						this.plugin.state.settings.openAIAPIKey = value;
+						await this.plugin.state.saveSettings();
 					})
 			);
 
@@ -98,10 +98,10 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOptions(AVAILABLE_MODELS)
-					.setValue(this.plugin.settings.openAIModel)
+					.setValue(this.plugin.state.settings.openAIModel)
 					.onChange(async (value) => {
-						this.plugin.settings.openAIModel = value;
-						await this.plugin.saveSettings();
+						this.plugin.state.settings.openAIModel = value;
+						await this.plugin.state.saveSettings();
 					})
 			);
 
@@ -114,11 +114,11 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 			.addText((slider) =>
 				slider
 					.setValue(
-						`${this.plugin.settings.oaiTemperature.toFixed(2)}`
+						`${this.plugin.state.settings.oaiTemperature.toFixed(2)}`
 					)
 					.onChange(async (value) => {
-						this.plugin.settings.oaiTemperature = parseFloat(value);
-						await this.plugin.saveSettings();
+						this.plugin.state.settings.oaiTemperature = parseFloat(value);
+						await this.plugin.state.saveSettings();
 					})
 			);
 
@@ -130,10 +130,10 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 			.setDesc(`The maximum number of tokens to use when generating text`)
 			.addText((slider) =>
 				slider
-					.setValue(`${this.plugin.settings.oaiMaxTokens}`)
+					.setValue(`${this.plugin.state.settings.oaiMaxTokens}`)
 					.onChange(async (value) => {
-						this.plugin.settings.oaiMaxTokens = parseInt(value);
-						await this.plugin.saveSettings();
+						this.plugin.state.settings.oaiMaxTokens = parseInt(value);
+						await this.plugin.state.saveSettings();
 					})
 			);
 
@@ -153,10 +153,10 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 					.setPlaceholder(
 						"Enter your prefered name here or leave blank"
 					)
-					.setValue(this.plugin.settings.userName)
+					.setValue(this.plugin.state.settings.userName)
 					.onChange(async (value) => {
-						this.plugin.settings.userName = value;
-						await this.plugin.saveSettings();
+						this.plugin.state.settings.userName = value;
+						await this.plugin.state.saveSettings();
 					})
 			);
 
@@ -171,10 +171,10 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 					.setPlaceholder(
 						"Enter your prefered pronouns here or leave blank"
 					)
-					.setValue(this.plugin.settings.userPronouns)
+					.setValue(this.plugin.state.settings.userPronouns)
 					.onChange(async (value) => {
-						this.plugin.settings.userPronouns = value;
-						await this.plugin.saveSettings();
+						this.plugin.state.settings.userPronouns = value;
+						await this.plugin.state.saveSettings();
 					})
 			);
 
@@ -191,10 +191,10 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 					.setPlaceholder(
 						"Enter your prefered languages here or leave blank"
 					)
-					.setValue(this.plugin.settings.userLanguages)
+					.setValue(this.plugin.state.settings.userLanguages)
 					.onChange(async (value) => {
-						this.plugin.settings.userLanguages = value;
-						await this.plugin.saveSettings();
+						this.plugin.state.settings.userLanguages = value;
+						await this.plugin.state.saveSettings();
 					})
 			);
 
@@ -209,10 +209,10 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 			.addTextArea((text) =>
 				text
 					.setPlaceholder("Enter as much or as little as you like...")
-					.setValue(this.plugin.settings.userBio)
+					.setValue(this.plugin.state.settings.userBio)
 					.onChange(async (value) => {
-						this.plugin.settings.userBio = value;
-						await this.plugin.saveSettings();
+						this.plugin.state.settings.userBio = value;
+						await this.plugin.state.saveSettings();
 					})
 			);
 
@@ -231,15 +231,15 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 				const folders = await this.getSortedFolderList();
 				dropdown.addOption("none", "None");
 				dropdown.addOptions(Object.fromEntries(folders));
-				dropdown.setValue(this.plugin.settings.rootFolder);
+				dropdown.setValue(this.plugin.state.settings.rootFolder);
 				dropdown.onChange(async (value) => {
-					this.plugin.settings.rootFolder = value;
-					await this.plugin.saveSettings();
+					this.plugin.state.settings.rootFolder = value;
+					await this.plugin.state.saveSettings();
 				});
 			})
 			.addButton(async (button) => {
 				button.setButtonText("Use").onClick(async () => {
-					const { rootFolder } = this.plugin.settings;
+					const { rootFolder } = this.plugin.state.settings;
 					const agentPath = normalizePath(`${rootFolder}/agents`);
 					const notesPath = normalizePath(`${rootFolder}/notes`);
 					const promptsPath = normalizePath(`${rootFolder}/prompts`);
@@ -269,14 +269,14 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 			.setName("Emoji Level?")
 			.setDesc("How many emojis should it use 🤔")
 			.addDropdown((dropdown) => {
-				dropdown.setValue(this.plugin.settings.emojiLevel);
+				dropdown.setValue(this.plugin.state.settings.emojiLevel);
 				dropdown.addOption("none", "None");
 				dropdown.addOption("low", "⬇️ Low");
 				dropdown.addOption("medium", "🎉 Some");
 				dropdown.addOption("high", "🍒🔥💩");
 				dropdown.onChange(async (value) => {
-					this.plugin.settings.emojiLevel = value as EmojiLevel;
-					await this.plugin.saveSettings();
+					this.plugin.state.settings.emojiLevel = value as EmojiLevel;
+					await this.plugin.state.saveSettings();
 				});
 			});
 	}

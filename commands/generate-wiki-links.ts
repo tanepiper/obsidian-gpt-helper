@@ -1,5 +1,4 @@
-import { Notice } from "obsidian";
-import { agents, prompts } from "../lib/settings.js";
+import { agents } from "../lib/settings.js";
 import type DigitalGardener from "../main.js";
 import generateWikiLinksPrompt from "./generate-wiki-links.md";
 
@@ -16,6 +15,8 @@ interface WikiLink {
  * @returns
  */
 export function generateWikiLinks(plugin: DigitalGardener) {
+	const settings = plugin.state.getSettings();
+
 	return {
 		id: "dg-generate-wiki-links",
 		name: "Append WikiLinks to current file",
@@ -42,7 +43,7 @@ export function generateWikiLinks(plugin: DigitalGardener) {
 					const result = await plugin.openAI.requestJSON(
 						prompt,
 						contents,
-						plugin.settings
+						settings
 					);
 					if (!result?.wikiLinks) {
 						return false;

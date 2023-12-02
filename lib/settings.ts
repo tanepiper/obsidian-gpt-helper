@@ -1,8 +1,4 @@
 import agentDigitalGardener from "../agents/digital-gardener.md";
-import renameFileFromContents from '../prompts/rename-file.md';
-import generateProperties from '../prompts/generate-properties.md';
-import generateWikiLinks from '../prompts/generate-wiki-links.md';
-
 
 /**
  * Settings for the GPT Helper plugin
@@ -58,12 +54,6 @@ export type EmojiLevel = "none" | "low" | "medium" | "high";
 export const agents = {
 	digitalGardener: `${agentDigitalGardener}`,
 };
-
-export const prompts = {
-	renameFileFromContents: `${renameFileFromContents}`,
-	generateProperties: `${generateProperties}`,
-	generateWikiLinks: `${generateWikiLinks}`,
-}
 
 export const DEFAULT_SETTINGS: DigitalGardenerSettings = {
 	rootFolder: "",

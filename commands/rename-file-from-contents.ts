@@ -1,9 +1,8 @@
+import { DGSelectModal } from "../modals/select-modal.js";
 import { Notice } from "obsidian";
-import { agents, prompts } from "../lib/settings.js";
+import { agents } from "../lib/settings.js";
 import type DigitalGardener from "../main.js";
-
 import renameFileFromContentsPrompt from "./rename-file-from-contents.md";
-import { DGSelectModal } from "views/select-modal.js";
 /**
  * A response from the OpenAI API that contains a filename with the reason and score for it's selection
  */
@@ -29,6 +28,8 @@ interface DGFileNameResponse {
  * @returns
  */
 export function renameFileFromContents(plugin: DigitalGardener) {
+	const settings = plugin.state.getSettings();
+
 	return {
 		id: "dg-rename-file-from-contents",
 		name: "Rename file from contents",
@@ -61,7 +62,7 @@ export function renameFileFromContents(plugin: DigitalGardener) {
 					const result = await plugin.openAI.requestJSON(
 						prompt,
 						contents,
-						plugin.settings
+						settings
 					);
 					window.clearInterval(timer);
 					plugin.updateDefaultStatusText();

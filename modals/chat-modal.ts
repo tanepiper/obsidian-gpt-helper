@@ -127,7 +127,7 @@ export class DigitalGardenerModal extends Modal {
 			.setName("Personalise Request")
 			.setDesc("Use personalisation settings from the settings tab")
 			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.userName !== "");
+				toggle.setValue(this.plugin.state.settings.userName !== "");
 				toggle.onChange((value) => {
 					this.options.includePersonalisation = value;
 				});
@@ -163,7 +163,7 @@ export class DigitalGardenerModal extends Modal {
 				dropdown.addOption("low", "⬇️ Low");
 				dropdown.addOption("medium", "🎉 Some");
 				dropdown.addOption("high", "🍒🔥💩");
-				dropdown.setValue(this.plugin.settings.emojiLevel);
+				dropdown.setValue(this.plugin.state.settings.emojiLevel);
 				dropdown.onChange(async (value) => {
 					this.options.emojiLevel = value as EmojiLevel;
 				});
@@ -179,7 +179,7 @@ export class DigitalGardenerModal extends Modal {
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOptions(AVAILABLE_MODELS)
-					.setValue(this.plugin.settings.openAIModel)
+					.setValue(this.plugin.state.settings.openAIModel)
 					.onChange(
 						async (value) => (this.options.openAIModel = value)
 					)
@@ -194,7 +194,7 @@ export class DigitalGardenerModal extends Modal {
 			.addText((text) =>
 				text
 					.setValue(
-						`${this.plugin.settings.oaiTemperature.toFixed(2)}`
+						`${this.plugin.state.settings.oaiTemperature.toFixed(2)}`
 					)
 					.onChange(async (value) => {
 						this.options.oaiTemperature = parseFloat(value);
@@ -209,7 +209,7 @@ export class DigitalGardenerModal extends Modal {
 			.setDesc(`The maximum number of tokens to use when generating text`)
 			.addText((text) =>
 				text
-					.setValue(`${this.plugin.settings.oaiMaxTokens}`)
+					.setValue(`${this.plugin.state.settings.oaiMaxTokens}`)
 					.onChange(
 						async (value) =>
 							(this.options.oaiMaxTokens = parseInt(value))
