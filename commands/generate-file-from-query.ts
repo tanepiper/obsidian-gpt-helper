@@ -4,8 +4,7 @@ import {
 	DigitalGardenerModal,
 	type ModalCallOptions,
 } from "modals/chat-modal.js";
-import { createEmojiLevelSetting } from "../lib/dynamic-prompts";
-import { agents } from "../lib/settings.js";
+import { createEmojiLevelSetting, generateInitialPrompt } from "../lib/dynamic-prompts";
 import DigitalGardener from "../main.js";
 import { DGMessageModal } from "../modals/simple-modal.js";
 import generateFileFromQueryPrompt from "./generate-file-from-query.md";
@@ -27,17 +26,7 @@ export function newFileFromPrompt(plugin: DigitalGardener): Command {
 			new DigitalGardenerModal(
 				plugin,
 				async (options: ModalCallOptions) => {
-					let prompt = `${agents.digitalGardener}\n\n`;
-
-					prompt += `Some additional important information:\n\n`;
-					prompt += `Today's date: ${new Date().toLocaleDateString()}\n\n`;
-					if (options.includePersonalisation) {
-						prompt += `The user has requested that you take the following personal information into account when generating the content:\n\n`;
-						prompt += `Name: ${settings.userName}\n`;
-						prompt += `Pronouns: ${settings.userPronouns}\n`;
-						prompt += `Prefered Language: ${settings.userLanguages}\n`;
-						prompt += `Biograph: ${settings.userBio}\n\n`;
-					}
+					let prompt = await generateInitialPrompt(plugin, options);
 					prompt += `${createEmojiLevelSetting(
 						options.emojiLevel
 					)}\n\n`;

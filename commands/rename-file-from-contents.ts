@@ -93,7 +93,7 @@ export function renameFileFromContents(plugin: DigitalGardener) {
 
 							await plugin.app.fileManager.renameFile(
 								file,
-								`${paths.join("/")}/${option}.md`
+								`${paths.join("/")}/${option.value}.md`
 							);
 						}
 					).open();

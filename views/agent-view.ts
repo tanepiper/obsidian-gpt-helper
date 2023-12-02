@@ -32,9 +32,10 @@ export class DGChatAgentView extends ItemView {
 		return "Digital Gardener";
 	}
 
-	onActiveFileChange() {
-		this.displayChatHistoryForActiveFile();
-	}
+	// onOpen() {
+	// 	console.log("Active file changed");
+	// 	//this.displayChatHistoryForActiveFile();
+	// }
 
 	displayChatHistoryForActiveFile() {
 		const activeFile = this.app.workspace.getActiveFile();
@@ -48,6 +49,7 @@ export class DGChatAgentView extends ItemView {
 	}
 
 	async onOpen() {
+		const activeFile = this.app.workspace.getActiveFile();
 		this.mainContainer = this.containerEl.children[1] as HTMLElement;
 		this.mainContainer.empty();
 

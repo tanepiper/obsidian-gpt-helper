@@ -11,14 +11,10 @@ import {
 import { GPTHelperSettingTab } from "./plugin-settings-tab.js";
 import { DGChatAgentView, DG_CHAT_AGENT_VIEW } from "views/agent-view.js";
 import { DGStateManager } from "./state.js";
+import ChatView from "../views/chat-agent.js";
 
 export class DigitalGardener extends Plugin {
 	state: DGStateManager;
-
-	/**
-	 * The instance settings for the plugin
-	 */
-	settings: DigitalGardenerSettings;
 
 	/**
 	 * The default status bar text
@@ -55,6 +51,38 @@ export class DigitalGardener extends Plugin {
 	 */
 	promptsPath: string;
 
+	get settings(): DigitalGardenerSettings {
+		return this.state.getSettings();
+	}
+
+	async saveSettings() {
+		await this.state.saveSettings();
+	}
+
+	getMarkdownFilesAndNames(): Record<string, string> {
+		const allMarkdownFiles = this.app.vault.getMarkdownFiles();
+		return Object.fromEntries(
+			allMarkdownFiles.map((file) => [file.path, file.name])
+		);
+	}
+
+	async getAllUniqueFrontmatterKeys(): Promise<Set<string>> {
+		const files = this.app.vault.getMarkdownFiles();
+		const metadataCache = this.app.metadataCache;
+		const uniqueKeys = new Set<string>();
+
+		for (const file of files) {
+			const metadata = metadataCache.getCache(file.path);
+			if (metadata && metadata.frontmatter) {
+				for (const key in metadata.frontmatter) {
+					uniqueKeys.add(key);
+				}
+			}
+		}
+
+		return uniqueKeys;
+	}
+
 	async onload() {
 		this.state = new DGStateManager(this, DEFAULT_SETTINGS);
 		await this.state.load();
@@ -62,13 +90,13 @@ export class DigitalGardener extends Plugin {
 
 		this.registerView(
 			DG_CHAT_AGENT_VIEW,
-			(leaf) => new DGChatAgentView(leaf, this)
+			(leaf) => new ChatView(leaf, this)
 		);
 
 		// Do initial setup routines
 		await this.setupFolders();
 
-		const { openAIAPIKey } = this.state.settings;
+		const { openAIAPIKey } = this.settings;
 
 		if (!openAIAPIKey) {
 			new Notice(
@@ -110,7 +138,7 @@ export class DigitalGardener extends Plugin {
 	 */
 	async setupFolders() {
 		this.rootFolder = `${this.app.vault.getRoot().path}${
-			this.state.settings.rootFolder
+			this.settings.rootFolder
 		}`;
 		if (!this.app.vault.adapter.exists(this.rootFolder)) {
 			await this.app.vault.createFolder(this.rootFolder);
@@ -158,10 +186,10 @@ export class DigitalGardener extends Plugin {
 
 	updateDefaultStatusText(inProgressText = "") {
 		const defaultStatusText = [
-			`🧑🏼‍🌾 ${this.state.settings.openAIModel ?? "No Model Set"}`,
-			`🔥 ${this.state.settings.oaiTemperature ?? "No Temperature Set"}`,
+			`🧑🏼‍🌾 ${this.settings.openAIModel ?? "No Model Set"}`,
+			`🔥 ${this.settings.oaiTemperature ?? "No Temperature Set"}`,
 			`🔢 ${
-				this.formatNumberWithK(this.state.settings.oaiMaxTokens) ??
+				this.formatNumberWithK(this.settings.oaiMaxTokens) ??
 				"No Max Tokens Set"
 			}`,
 		];

@@ -120,25 +120,35 @@ export class DigitalGardenerModal extends Modal {
 
 		/** Options Container Start */
 		optionsArea = contentEl.createDiv("options-container");
+		optionsArea.style.marginTop = "10px";
 
-		optionsArea.createEl("h2", { text: "Include Options" });
-		// Personalisation Toggle
-		new Setting(optionsArea)
-			.setName("Personalise Request")
-			.setDesc("Use personalisation settings from the settings tab")
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.state.settings.userName !== "");
-				toggle.onChange((value) => {
-					this.options.includePersonalisation = value;
+		if (!this.plugin.settings?.userName) {
+			this.options.includePersonalisation = false;
+		} else {
+			// Personalisation Toggle
+			new Setting(optionsArea)
+				.setName(
+					`Personalise request for ${this.plugin.settings.userName}`
+				)
+				.setDesc(
+					"Use the personalisation settings set for you as a user to personalise the request"
+				)
+				.addToggle((toggle) => {
+					toggle.setValue(false);
+					toggle.onChange((value) => {
+						this.options.includePersonalisation = value;
+					});
 				});
-			});
+		}
 
 		// Include Files Toggle
 		new Setting(optionsArea)
-			.setName("Include Files")
-			.setDesc("Include file references in the request")
+			.setName("Include all file references")
+			.setDesc(
+				"If enabled, before the requests is sent an object of all file paths and names will be passed to the request. Please note this will add to the total tokens sent to OpenAI"
+			)
 			.addToggle((toggle) => {
-				toggle.setValue(true);
+				toggle.setValue(false);
 				toggle.onChange((value) => {
 					this.options.includeFilenames = value;
 				});
@@ -146,10 +156,13 @@ export class DigitalGardenerModal extends Modal {
 
 		// Include Tags Toggle
 		new Setting(optionsArea)
-			.setName("Include Tags")
-			.setDesc("Include tag references in the request")
+			.setName("Include all tags")
+			.setDesc(
+				"If enabled, before the requests is sent comma seperated list of all tags will be passed to the request. Please note this will add to the total tokens sent to OpenAI"
+			)
+
 			.addToggle((toggle) => {
-				toggle.setValue(true);
+				toggle.setValue(false);
 				toggle.onChange((value) => {
 					this.options.includeTags = value;
 				});
@@ -157,7 +170,9 @@ export class DigitalGardenerModal extends Modal {
 
 		new Setting(optionsArea)
 			.setName("Emoji Level?")
-			.setDesc("How many emojis should it use 🤔")
+			.setDesc(
+				"Select the amount of emojis the agent can use in the response, by default this will use the value from the settings."
+			)
 			.addDropdown((dropdown) => {
 				dropdown.addOption("none", "None");
 				dropdown.addOption("low", "⬇️ Low");
@@ -175,7 +190,9 @@ export class DigitalGardenerModal extends Modal {
 		 */
 		new Setting(optionsArea)
 			.setName("OpenAI Model")
-			.setDesc("Select the OpenAI model to use for this request")
+			.setDesc(
+				"The OpenAI model to use.\nSelect to override the default OpenAI model from the plugin settings"
+			)
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOptions(AVAILABLE_MODELS)
@@ -190,11 +207,15 @@ export class DigitalGardenerModal extends Modal {
 		 */
 		new Setting(optionsArea)
 			.setName("Temperature")
-			.setDesc(`Enter the temperature to use when generating text`)
+			.setDesc(
+				`The temperature to use when generating text. You can change this to get more or less random results, the current value is the plugin default temperature`
+			)
 			.addText((text) =>
 				text
 					.setValue(
-						`${this.plugin.state.settings.oaiTemperature.toFixed(2)}`
+						`${this.plugin.state.settings.oaiTemperature.toFixed(
+							2
+						)}`
 					)
 					.onChange(async (value) => {
 						this.options.oaiTemperature = parseFloat(value);
@@ -206,7 +227,7 @@ export class DigitalGardenerModal extends Modal {
 		 */
 		new Setting(optionsArea)
 			.setName("Max Tokens")
-			.setDesc(`The maximum number of tokens to use when generating text`)
+			.setDesc(`The maximum number of tokens to use when generating text. The current value is the plugin default max tokens`)
 			.addText((text) =>
 				text
 					.setValue(`${this.plugin.state.settings.oaiMaxTokens}`)
