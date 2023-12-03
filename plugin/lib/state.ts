@@ -1,5 +1,5 @@
-import { type DigitalGardenerSettings } from "../lib/settings.js";
-import { DigitalGardener } from "./plugin.js";
+import { type DigitalGardenerSettings } from "../../lib/settings.js";
+import { DigitalGardener } from "../plugin.js";
 
 /**
  * The Digital Gardener state manager
@@ -49,5 +49,6 @@ export class DGStateManager {
 	 */
 	updateSettings(newSettings: DigitalGardenerSettings): void {
 		this._settings = { ...this._settings, ...newSettings };
+		this.saveSettings();
 	}
 }

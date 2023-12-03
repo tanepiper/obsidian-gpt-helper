@@ -1,16 +1,13 @@
 import {
 	App,
-	Notice,
 	PluginSettingTab,
-	Setting,
-	normalizePath,
+	Setting
 } from "obsidian";
-import { type DigitalGardener } from "./plugin.js";
 import {
 	AVAILABLE_MODELS,
-	DEFAULT_SETTINGS,
-	type EmojiLevel,
+	type EmojiLevel
 } from "../lib/settings.js";
+import { type DigitalGardener } from "./plugin.js";
 
 /**
  * This class provides the settings tab for the plugin
@@ -28,32 +25,6 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: DigitalGardener) {
 		super(app, plugin);
 		this.plugin = plugin;
-	}
-
-	async getSortedFolderList(): Promise<[string, string][]> {
-		const rootPath = this.app.vault.getRoot().path;
-		const allFolders: string[] = [];
-		await this.recursiveFolderSearch(rootPath, allFolders);
-		allFolders.sort();
-		return allFolders.map((folder: string) => [folder, folder]);
-	}
-
-	async recursiveFolderSearch(path: string, folderList: string[]) {
-		const list = await this.app.vault.adapter.list(path);
-		let folders = list?.folders ?? [];
-		folders = folders.filter((folder) => {
-			if (folder.includes(".obsidian")) return false;
-			if (folder.includes(".git")) return false;
-			if (folder.includes(".space")) return false;
-			if (folder.includes(".trash")) return false;
-			return true;
-		});
-
-		// Check if the path contains directories and recursively search them
-		for (const folder of folders) {
-			folderList.push(folder);
-			await this.recursiveFolderSearch(folder, folderList);
-		}
 	}
 
 	async display(): Promise<void> {
@@ -220,48 +191,6 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 		 * Agent Settings
 		 */
 		containerEl.createEl("h2", { text: "Agent Settings" });
-
-		new Setting(containerEl)
-			.setName("Root directory")
-			.setDesc(
-				`Select a root directory for your Digital Garden, this is where all files and notes will be stored in a particular folder layout
-				\n Click the button to create the folder structure if it doesn't exist`
-			)
-			.addDropdown(async (dropdown) => {
-				const folders = await this.getSortedFolderList();
-				dropdown.addOption("none", "None");
-				dropdown.addOptions(Object.fromEntries(folders));
-				dropdown.setValue(this.plugin.settings.rootFolder);
-				dropdown.onChange(async (value) => {
-					this.plugin.settings.rootFolder = value;
-					await this.plugin.saveSettings();
-				});
-			})
-			.addButton(async (button) => {
-				button.setButtonText("Use").onClick(async () => {
-					const { rootFolder } = this.plugin.settings;
-					const agentPath = normalizePath(`${rootFolder}/agents`);
-					const notesPath = normalizePath(`${rootFolder}/notes`);
-					const promptsPath = normalizePath(`${rootFolder}/prompts`);
-
-					console.log(agentPath, notesPath, promptsPath);
-
-					let message = `Creating Digital Garden at ${rootFolder}`;
-					if (!this.app.vault.adapter.exists(agentPath)) {
-						this.app.vault.createFolder(agentPath);
-						message += `\nCreated Agents folder`;
-					}
-					if (!this.app.vault.adapter.exists(notesPath)) {
-						this.app.vault.createFolder(notesPath);
-						message += `\nCreated Notes folder`;
-					}
-					if (!this.app.vault.adapter.exists(promptsPath)) {
-						this.app.vault.createFolder(promptsPath);
-						message += `\nCreated Prompts folder`;
-					}
-					new Notice(message);
-				});
-			});
 		/**
 		 * Emoji Level
 		 */
@@ -269,11 +198,11 @@ export class GPTHelperSettingTab extends PluginSettingTab {
 			.setName("Emoji Level?")
 			.setDesc("How many emojis should it use 🤔")
 			.addDropdown((dropdown) => {
-				dropdown.setValue(this.plugin.settings.emojiLevel);
 				dropdown.addOption("none", "None");
 				dropdown.addOption("low", "⬇️ Low");
 				dropdown.addOption("medium", "🎉 Some");
 				dropdown.addOption("high", "🍒🔥💩");
+				dropdown.setValue(this.plugin.settings.emojiLevel);
 				dropdown.onChange(async (value) => {
 					this.plugin.settings.emojiLevel = value as EmojiLevel;
 					await this.plugin.saveSettings();

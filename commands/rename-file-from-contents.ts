@@ -27,7 +27,7 @@ interface DGFileNameResponse {
  * @param plugin The parent plugin
  * @returns
  */
-export function renameFileFromContents(plugin: DigitalGardener) {
+export function cmdRenameFileFromContents(plugin: DigitalGardener) {
 	const settings = plugin.state.getSettings();
 
 	return {

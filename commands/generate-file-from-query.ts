@@ -4,7 +4,10 @@ import {
 	DigitalGardenerModal,
 	type ModalCallOptions,
 } from "modals/chat-modal.js";
-import { createEmojiLevelSetting, generateInitialPrompt } from "../lib/dynamic-prompts";
+import {
+	createEmojiLevelSetting,
+	generateInitialPrompt,
+} from "../lib/dynamic-prompts";
 import DigitalGardener from "../main.js";
 import { DGMessageModal } from "../modals/simple-modal.js";
 import generateFileFromQueryPrompt from "./generate-file-from-query.md";
@@ -14,8 +17,7 @@ import generateFileFromQueryPrompt from "./generate-file-from-query.md";
  * @param plugin The parent plugin
  * @returns
  */
-export function newFileFromPrompt(plugin: DigitalGardener): Command {
-
+export function cmdGenerateFileFromQuery(plugin: DigitalGardener): Command {
 	const settings = plugin.state.getSettings();
 
 	const command: Command = {
@@ -77,17 +79,21 @@ export function newFileFromPrompt(plugin: DigitalGardener): Command {
 						return;
 					}
 
-					let output = "";
-					if (result?.frontmatterRaw) {
-						output += `${result.frontmatterRaw}\n\n`;
-					}
-					output += result.content;
 					const filename = `${
-						plugin.notesPath
-					}/${result.filename.replace(".md", "")}.md`;
+						plugin.settings.rootFolder
+					}/notes/${result.filename.replace(".md", "")}.md`;
 					const file = await plugin.app.vault.create(
 						filename,
-						output
+						result.content
+					);
+					await plugin.app.fileManager.processFrontMatter(
+						file,
+						(frontmatter) => {
+							Object.assign(
+								frontmatter,
+								result?.frontmatter ?? {}
+							);
+						}
 					);
 					new Notice(`🧑🏼‍🌾 New file\n${file.name}`);
 					await plugin.app.workspace.getLeaf(false).openFile(file);

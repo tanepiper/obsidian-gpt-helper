@@ -14,7 +14,7 @@ interface WikiLink {
  * @param plugin The parent plugin
  * @returns
  */
-export function generateWikiLinks(plugin: DigitalGardener) {
+export function cmdGenerateWikiLinks(plugin: DigitalGardener) {
 	const settings = plugin.state.getSettings();
 
 	return {

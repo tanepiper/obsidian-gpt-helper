@@ -10,9 +10,9 @@ import {
 import loadingSVG from "../assets/loader.svg";
 
 export interface ModalCallOptions {
-	includePersonalisation?: boolean;
-	includeFilenames?: boolean;
-	includeTags?: boolean;
+	includePersonalisation: boolean;
+	includeFilenames: boolean;
+	includeTags: boolean;
 	userQuery: string;
 	openAIModel: string;
 	oaiTemperature: number;
@@ -28,9 +28,9 @@ export class DigitalGardenerModal extends Modal {
 	plugin: DigitalGardener;
 
 	options: ModalCallOptions = {
-		includePersonalisation: true,
-		includeFilenames: true,
-		includeTags: true,
+		includePersonalisation: false,
+		includeFilenames: false,
+		includeTags: false,
 		userQuery: "",
 		openAIModel: "",
 		oaiTemperature: 0.5,
@@ -134,7 +134,7 @@ export class DigitalGardenerModal extends Modal {
 					"Use the personalisation settings set for you as a user to personalise the request"
 				)
 				.addToggle((toggle) => {
-					toggle.setValue(false);
+					toggle.setValue(this.options.includePersonalisation);
 					toggle.onChange((value) => {
 						this.options.includePersonalisation = value;
 					});
@@ -148,7 +148,7 @@ export class DigitalGardenerModal extends Modal {
 				"If enabled, before the requests is sent an object of all file paths and names will be passed to the request. Please note this will add to the total tokens sent to OpenAI"
 			)
 			.addToggle((toggle) => {
-				toggle.setValue(false);
+				toggle.setValue(this.options.includeFilenames);
 				toggle.onChange((value) => {
 					this.options.includeFilenames = value;
 				});
@@ -162,12 +162,13 @@ export class DigitalGardenerModal extends Modal {
 			)
 
 			.addToggle((toggle) => {
-				toggle.setValue(false);
+				toggle.setValue(this.options.includeTags);
 				toggle.onChange((value) => {
 					this.options.includeTags = value;
 				});
 			});
 
+		this.options.emojiLevel = this.plugin.settings.emojiLevel;
 		new Setting(optionsArea)
 			.setName("Emoji Level?")
 			.setDesc(
@@ -178,7 +179,7 @@ export class DigitalGardenerModal extends Modal {
 				dropdown.addOption("low", "⬇️ Low");
 				dropdown.addOption("medium", "🎉 Some");
 				dropdown.addOption("high", "🍒🔥💩");
-				dropdown.setValue(this.plugin.state.settings.emojiLevel);
+				dropdown.setValue(this.options.emojiLevel);
 				dropdown.onChange(async (value) => {
 					this.options.emojiLevel = value as EmojiLevel;
 				});
@@ -188,6 +189,7 @@ export class DigitalGardenerModal extends Modal {
 		/**
 		 * OpenAI Model to use
 		 */
+		this.options.openAIModel = this.plugin.settings.openAIModel;
 		new Setting(optionsArea)
 			.setName("OpenAI Model")
 			.setDesc(
@@ -196,7 +198,7 @@ export class DigitalGardenerModal extends Modal {
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOptions(AVAILABLE_MODELS)
-					.setValue(this.plugin.state.settings.openAIModel)
+					.setValue(this.options.openAIModel)
 					.onChange(
 						async (value) => (this.options.openAIModel = value)
 					)
@@ -205,6 +207,7 @@ export class DigitalGardenerModal extends Modal {
 		/**
 		 * OpenAI Temperature
 		 */
+		this.options.oaiTemperature = this.plugin.settings.oaiTemperature;
 		new Setting(optionsArea)
 			.setName("Temperature")
 			.setDesc(
@@ -213,7 +216,7 @@ export class DigitalGardenerModal extends Modal {
 			.addText((text) =>
 				text
 					.setValue(
-						`${this.plugin.state.settings.oaiTemperature.toFixed(
+						`${this.options.oaiTemperature.toFixed(
 							2
 						)}`
 					)
@@ -225,12 +228,15 @@ export class DigitalGardenerModal extends Modal {
 		/**
 		 * OpenAI Max Tokens
 		 */
+		this.options.oaiMaxTokens = this.plugin.settings.oaiMaxTokens;
 		new Setting(optionsArea)
 			.setName("Max Tokens")
-			.setDesc(`The maximum number of tokens to use when generating text. The current value is the plugin default max tokens`)
+			.setDesc(
+				`The maximum number of tokens to use when generating text. The current value is the plugin default max tokens`
+			)
 			.addText((text) =>
 				text
-					.setValue(`${this.plugin.state.settings.oaiMaxTokens}`)
+					.setValue(`${this.options.oaiMaxTokens}`)
 					.onChange(
 						async (value) =>
 							(this.options.oaiMaxTokens = parseInt(value))

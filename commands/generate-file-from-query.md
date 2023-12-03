@@ -1,22 +1,34 @@
 ---
-task: Generate the content for a new page in Obsidian with required page file name, frontmattter and markdown content contained in a JSON object. Make the content rich and interesting - find interesting data about the topic that can be turned into properties for filtering and querying by the user
+title: "Generate file from query"
+task: "Create a comprehensive and engaging new page in Obsidian. This task involves generating a JSON object that includes the new page's filename, a captivating title, detailed markdown content, and a well-structured frontmatter. The content should be rich in information, offering data about the topic that allows for effective filtering and querying by the user."
 newFile: true
 output: json
+jsonSchema: 
+  type: object
+  properties:
+    filename: 
+      type: string
+      description: "Required. A valid filename for the note, ensuring it only contains alphanumeric characters, hyphens, and spaces. This will serve as the note's title and identifier."
+    title: 
+      type: string
+      description: "Required. A descriptive and engaging title that correlates with the filename, designed to capture the essence of the note's content."
+    agentResponses: 
+      type: array
+      items: 
+        type: string
+      description: "Optional. Any additional feedback or commentary from the agent, separate from the main content of the note."
+    frontmatter: 
+      type: object
+      description: "Optional. A YAML-formatted object containing key-value pairs. Key attributes include 'tags' for categorization, 'status' for tracking note progression, 'author' for attribution, and 'creationDate' for historical context."
+    frontmatterRaw: 
+      type: string
+      description: "Optional. The raw text version of the frontmatter, providing a textual representation for direct insertion into the note."
+    content: 
+      type: string
+      description: "Required. The main body of the note, composed in Markdown. This content should be informative, factual, and meticulously structured using Markdown syntax. It should be devoid of agent commentary to maintain factual integrity."
+  required: ["filename", "title", "content"]
 ---
 
-Below is the example schema for the JSON you will respond with.
+Your task is to generate a JSON object adhering to the schema provided. This object will serve as the blueprint for creating a new file in Obsidian. Ensure to include a relevant file title, comprehensive markdown content, and the necessary frontmatter properties. Optionally, you may also provide agent responses within the JSON structure.
 
-Do not modify the keys as written.  The values have the rules for each value, how it should be presented and it's required or optional
-
-```json
-{
-  "filename": "Required - The file name to be used for the new file, this is also a file title.  It can only contain alphanumeric characters, hyphens and spaces.",
-  "title": "Requied - A descriptive title for the content",
-  "agentResponses": ["Optional - Put your response here, this is where you as an agent can give feedback - do not put your own feedback into the main body, and feedback is optional"],
-  "frontmatter": "Optional - an object of keys and values. For multiple values prefer YAML object style over comma seperated. Frontmatter when generated should always contain the following: tags - a list of tags associated with the content, status: a status for the file, set it to Generated in the first instance, author: The Digital Gardener, Creation Date: todays date. It can only contain alphanumeric characters, hyphens and spaces.",
-  "frontmatterRaw": "Optional - Render the frontmatter properties as raw text",
-  "content": "Required - This is the markdown content requested by the user - as you are a knowledge management system the content should contain no commentary for the agent, it should be well structured markdown with headings, #hashTags for tagging, images, links and other content"
-}
-```
-
-
+If the user has provided a set of other files and tags, you should analyse the text to find relevant links that are based on the topic being presented.

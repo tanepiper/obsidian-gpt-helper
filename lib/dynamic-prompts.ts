@@ -5,35 +5,47 @@ import { ModalCallOptions } from "../modals/chat-modal.js";
 import DigitalGardener from "main.js";
 import { findAllTags } from "./obsidian.js";
 
+function getTodaysDateFormatted() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0'); // Months are 0-based in JavaScript
+    const day = String(today.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+}
+
+
 export async function generateInitialPrompt(
 	plugin: DigitalGardener,
 	options?: ModalCallOptions
 ): Promise<string> {
+	console.log(options)
 	const { settings } = plugin;
 	let prompt = `${digitalGardenerPrompt}\n\n`;
 	prompt += `${systemPrompt}\n\n`;
 
 	prompt += `Some additional important information:\n\n`;
-	prompt += `Today's date: ${new Date().toLocaleDateString()}\n\n`;
+	prompt += `Today's date: ${getTodaysDateFormatted()}\n\n`;
+
 	prompt += `The current time: ${new Date().toLocaleTimeString()}\n\n`;
 	prompt += `The current Obsidian vault name: ${plugin.app.vault.getName()}\n\n`;
 	prompt += `The current Obsidian vault config dir is: ${plugin.app.vault.configDir}\n\n`;
 
 	const keys = await plugin.getAllUniqueFrontmatterKeys();
-	const dontReplaceKeys = ["created", "modified", "status", "author"];
+	const dontReplaceKeys = ["title", "createdAt", "status", "author"];
 	prompt += `Here are all the frontmatter keys available in the current vault, ensure reuse ones that are relevant:\n\n`;
 	prompt += `${JSON.stringify(Array.from(keys), null, 2)}\n\n`;
-	prompt += `The following key words are used in keys that tend to be automatically generated and should not be replaced so don't include them in your output unless they are missing in a file: ${dontReplaceKeys.join(
-		", "
-	)}\n\n`;
+	prompt += `IF A KEY ALREADY HAS A VALUE IGNORE IT AND DO NOT REPLACE THE CURRENT VALUE\n\n`;
 
-	if (options?.includePersonalisation) {
+	if (options?.includePersonalisation === true) {
+		prompt += `The following is the personalisation information the user have provided:\n\n`;
 		prompt += `Name: ${settings.userName}\n`;
 		prompt += `Pronouns: ${settings.userPronouns}\n`;
 		prompt += `Preferred Language: ${settings.userLanguages}\n`;
 		prompt += `Biograph: ${settings.userBio}\n\n`;
 	}
-	if (options?.includeFilenames) {
+
+	if (options?.includeFilenames === true) {
 		const allMarkdownFiles = plugin.app.vault.getMarkdownFiles();
 		const allMDFileNames = Object.fromEntries(
 			allMarkdownFiles.map((file) => [file.path, file.name])
@@ -43,7 +55,7 @@ export async function generateInitialPrompt(
 	When creating the content, create wikilinks to relevant files, these files exist in the list above
 	Obsidian's [[FILENAME]] WikiLinks to connect the content.`;
 	}
-	if (options?.includeTags) {
+	if (options?.includeTags === true) {
 		const tags = new Set<string>();
 
 		plugin.app.vault.getMarkdownFiles().forEach((file) => {
@@ -56,6 +68,7 @@ export async function generateInitialPrompt(
 	When creating the content, create wikilinks to relevant tags, these tags exist in the list above
 	`;
 	}
+	console.log(prompt);
 
 	return prompt;
 }

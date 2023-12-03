@@ -1,16 +1,15 @@
-import { Notice } from "obsidian";
-import { agents } from "../lib/settings.js";
-import type DigitalGardener from "../main.js";
-import generateFilePropertiesPrompt from "./generate-file-properties.md";
-import { DGMessageModal } from "../modals/simple-modal.js";
 import { generateInitialPrompt } from "lib/dynamic-prompts.js";
 import { DGSelectModal } from "modals/select-modal.js";
+import { Notice } from "obsidian";
+import type DigitalGardener from "../main.js";
+import { DGMessageModal } from "../modals/simple-modal.js";
+import generateFilePropertiesPrompt from "./generate-file-properties.md";
 /**
  * Rename a file from it's contents
  * @param plugin The parent plugin
  * @returns
  */
-export function generateFileProperties(plugin: DigitalGardener) {
+export function cmdGenerateFileProperties(plugin: DigitalGardener) {
 	const settings = plugin.state.getSettings();
 
 	return {

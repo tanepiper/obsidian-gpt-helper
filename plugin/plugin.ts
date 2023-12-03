@@ -1,19 +1,43 @@
 import { Notice, Plugin, WorkspaceLeaf } from "obsidian";
-import { generateFileProperties } from "../commands/generate-file-properties.js";
-import { generateWikiLinks } from "../commands/generate-wiki-links.js";
-import { newFileFromPrompt } from "../commands/generate-file-from-query.js";
-import { renameFileFromContents } from "../commands/rename-file-from-contents.js";
+import { DG_CHAT_AGENT_VIEW } from "views/agent-view.js";
+import {
+	cmdGenerateFileFromQuery,
+	cmdGenerateFileProperties,
+	cmdGenerateWikiLinks,
+	cmdRenameFileFromContents,
+} from "../commands/index.js";
 import { DGOpenAIClient, createOpenAIClient } from "../lib/gpt.js";
 import {
 	DEFAULT_SETTINGS,
 	type DigitalGardenerSettings,
 } from "../lib/settings.js";
-import { GPTHelperSettingTab } from "./plugin-settings-tab.js";
-import { DGChatAgentView, DG_CHAT_AGENT_VIEW } from "views/agent-view.js";
-import { DGStateManager } from "./state.js";
 import ChatView from "../views/chat-agent.js";
+import {
+	DGStateManager,
+	DGStatusBar,
+	DGVaultFileHandler,
+} from "./lib/index.js";
+import { createInstaller } from "./lib/install.js";
+import { GPTHelperSettingTab } from "./plugin-settings-tab.js";
 
+/**
+ * The Digital Gardener is a plugin for Obsidian that works with OpenAI-compatible GPT APIs to allow
+ * you to create agents that can help you with your Obsidian vault.
+ */
 export class DigitalGardener extends Plugin {
+	/**
+	 * File handler for working with Obsidian vaults and files
+	 */
+	private fileHandler: DGVaultFileHandler;
+
+	/**
+	 * A status bar for displaying information about the plugin
+	 */
+	statusBar: DGStatusBar;
+
+	/**
+	 * The state manager for the plugin
+	 */
 	state: DGStateManager;
 
 	/**
@@ -32,69 +56,82 @@ export class DigitalGardener extends Plugin {
 	rootFolder: string;
 
 	/**
-	 * The status bar item element
+	 * Get the settings for the plugin from the state manager
 	 */
-	statusBarItemEl: HTMLElement;
-
-	/**
-	 * The path to the notes folder
-	 */
-	notesPath: string;
-
-	/**
-	 * The path to the agents folder
-	 */
-	agentsPath: string;
-
-	/**
-	 * The path to the agents folder
-	 */
-	promptsPath: string;
-
 	get settings(): DigitalGardenerSettings {
 		return this.state.getSettings();
+	}
+
+	set settings(_settings: DigitalGardenerSettings) {
+		this.state.updateSettings(_settings);
 	}
 
 	async saveSettings() {
 		await this.state.saveSettings();
 	}
 
-	getMarkdownFilesAndNames(): Record<string, string> {
-		const allMarkdownFiles = this.app.vault.getMarkdownFiles();
-		return Object.fromEntries(
-			allMarkdownFiles.map((file) => [file.path, file.name])
-		);
-	}
-
-	async getAllUniqueFrontmatterKeys(): Promise<Set<string>> {
-		const files = this.app.vault.getMarkdownFiles();
-		const metadataCache = this.app.metadataCache;
-		const uniqueKeys = new Set<string>();
-
-		for (const file of files) {
-			const metadata = metadataCache.getCache(file.path);
-			if (metadata && metadata.frontmatter) {
-				for (const key in metadata.frontmatter) {
-					uniqueKeys.add(key);
-				}
-			}
-		}
-
-		return uniqueKeys;
-	}
-
-	async onload() {
+	/**
+	 * Set up additional classes that help with the plugin
+	 */
+	private async setupClassHelpers() {
+		// Before other helpers load the settings
 		this.state = new DGStateManager(this, DEFAULT_SETTINGS);
 		await this.state.load();
-		this.statusBarItemEl = this.addStatusBarItem();
+
+		this.fileHandler = new DGVaultFileHandler(
+			this.app,
+			this.settings?.rootFolder ?? "digital-gardener"
+		);
+		this.statusBar = new DGStatusBar(this.addStatusBarItem());
+	}
+
+	/**
+	 * Run the plugin installer
+	 */
+	private async installPlugin() {
+		const installer = createInstaller(this.fileHandler);
+		await installer.createConfigFolders([
+			"notes",
+			"agents",
+			"prompts",
+			"chats",
+		]);
+	}
+
+	/**
+	 * Setup views for the plugin
+	 */
+	private setupViews() {
+		// This adds a settings tab so the user can configure various aspects of the plugin
+		this.addSettingTab(new GPTHelperSettingTab(this.app, this));
 
 		this.registerView(
 			DG_CHAT_AGENT_VIEW,
 			(leaf) => new ChatView(leaf, this)
 		);
+		this.addRibbonIcon("bot", "Digital Gardener Chat", () => {
+			this.activateView(DG_CHAT_AGENT_VIEW);
+		});
+	}
 
-		// Do initial setup routines
-		await this.setupFolders();
+	/**
+	 * Setup commands for the plugin
+	 */
+	private setupCommands() {
+		this.addCommand(cmdRenameFileFromContents(this) as any);
+		this.addCommand(cmdGenerateFileFromQuery(this) as any);
+		this.addCommand(cmdGenerateFileProperties(this) as any);
+		this.addCommand(cmdGenerateWikiLinks(this) as any);
+	}
+
+	async onload() {
+		await this.setupClassHelpers();
+
+		if (!(await this.fileHandler.rootFolderExists())) {
+			await this.installPlugin();
+		}
+		this.setupViews();
+		this.setupCommands();
 
 		const { openAIAPIKey } = this.settings;
 
@@ -102,61 +139,14 @@ export class DigitalGardener extends Plugin {
 			new Notice(
 				"🧑🏼‍🌾 Digital Gardener Error:\n\nNo OpenAI API Key Set, please update this in Obsidian plugin settings"
 			);
-			this.statusBarItemEl.setText("🧑🏼‍🌾 No API Key");
+			this.statusBar.setContent("🧑🏼‍🌾 No API Key");
 			return;
 		}
 		this.openAI = createOpenAIClient(openAIAPIKey);
 		this.updateDefaultStatusText();
-		this.addRibbonIcon("bot", "Digital Gardener Chat", () => {
-			this.activateView(DG_CHAT_AGENT_VIEW);
-		});
-
-		/**
-		 * Commands
-		 */
-
-		// Rename a file from it's contents
-		this.addCommand(renameFileFromContents(this) as any);
-
-		// Generate a new file from a prompt
-		this.addCommand(newFileFromPrompt(this) as any);
-
-		// Generate file properties
-		this.addCommand(generateFileProperties(this) as any);
-
-		// Generate WikiLinks
-		this.addCommand(generateWikiLinks(this) as any);
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new GPTHelperSettingTab(this.app, this));
 	}
 
 	onunload() {}
-
-	/**
-	 * Get the paths for all the app folders and if they don't exist, create them
-	 */
-	async setupFolders() {
-		this.rootFolder = `${this.app.vault.getRoot().path}${
-			this.settings.rootFolder
-		}`;
-		if (!this.app.vault.adapter.exists(this.rootFolder)) {
-			await this.app.vault.createFolder(this.rootFolder);
-		}
-
-		this.notesPath = `${this.rootFolder}/notes`;
-		if (!this.app.vault.adapter.exists(this.notesPath)) {
-			await this.app.vault.createFolder(this.notesPath);
-		}
-		this.agentsPath = `${this.rootFolder}/agents`;
-		if (!this.app.vault.adapter.exists(this.agentsPath)) {
-			await this.app.vault.createFolder(this.agentsPath);
-		}
-		this.promptsPath = `${this.rootFolder}/prompts`;
-		if (!this.app.vault.adapter.exists(this.promptsPath)) {
-			await this.app.vault.createFolder(this.promptsPath);
-		}
-	}
 
 	formatNumberWithK(num: number): string {
 		if (num < 1000) {
@@ -194,10 +184,7 @@ export class DigitalGardener extends Plugin {
 			}`,
 		];
 		if (inProgressText) defaultStatusText.push(`⏳ ${inProgressText}`);
-
-		this.defaultStatusText = defaultStatusText.join(" ");
-
-		this.statusBarItemEl.setText(this.defaultStatusText);
+		this.statusBar.setContent(defaultStatusText.join(" "));
 	}
 
 	async activateView(viewType: string) {
@@ -218,5 +205,29 @@ export class DigitalGardener extends Plugin {
 
 		// "Reveal" the leaf in case it is in a collapsed sidebar
 		workspace.revealLeaf(leaf);
+	}
+
+	getMarkdownFilesAndNames(): Record<string, string> {
+		const allMarkdownFiles = this.app.vault.getMarkdownFiles();
+		return Object.fromEntries(
+			allMarkdownFiles.map((file) => [file.path, file.name])
+		);
+	}
+
+	async getAllUniqueFrontmatterKeys(): Promise<Set<string>> {
+		const files = this.app.vault.getMarkdownFiles();
+		const metadataCache = this.app.metadataCache;
+		const uniqueKeys = new Set<string>();
+
+		for (const file of files) {
+			const metadata = metadataCache.getCache(file.path);
+			if (metadata && metadata.frontmatter) {
+				for (const key in metadata.frontmatter) {
+					uniqueKeys.add(key);
+				}
+			}
+		}
+
+		return uniqueKeys;
 	}
 }

@@ -56,7 +56,7 @@ export const agents = {
 };
 
 export const DEFAULT_SETTINGS: DigitalGardenerSettings = {
-	rootFolder: "",
+	rootFolder: "digital-gardener",
 	userName: "",
 	userPronouns: "",
 	userBio: "",
