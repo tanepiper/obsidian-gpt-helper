@@ -1,3 +1,4 @@
+import { ChatCompletionMessageParam } from "openai/resources/index.js";
 import { agents } from "../lib/settings.js";
 import type DigitalGardener from "../main.js";
 import generateWikiLinksPrompt from "./generate-wiki-links.md";
@@ -40,10 +41,12 @@ export function cmdGenerateWikiLinks(plugin: DigitalGardener) {
 					Obsidian's [[FILENAME]] WikiLinks to connect the content.`;
 
 					const contents = await plugin.app.vault.cachedRead(file);
+					const messages: ChatCompletionMessageParam[] = [
+						{ role: "system", content: prompt },
+						{ role: "user", content: `${contents}` },
+					];
 					const result = await plugin.openAI.requestJSON(
-						prompt,
-						contents,
-						settings
+						messages
 					);
 					if (!result?.wikiLinks) {
 						return false;

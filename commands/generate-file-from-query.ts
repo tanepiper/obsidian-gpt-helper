@@ -11,6 +11,7 @@ import {
 import DigitalGardener from "../main.js";
 import { DGMessageModal } from "../modals/simple-modal.js";
 import generateFileFromQueryPrompt from "./generate-file-from-query.md";
+import { ChatCompletionMessageParam } from "openai/resources";
 
 /**
  * Rename a file from it's contents
@@ -65,10 +66,14 @@ export function cmdGenerateFileFromQuery(plugin: DigitalGardener): Command {
 					`;
 					}
 
+					const messages: ChatCompletionMessageParam[] = [
+						{ role: "system", content: prompt },
+						{ role: "user", content: `${options.userQuery}` },
+					];
+
 					const result = await plugin.openAI.requestJSON(
-						prompt,
-						`${options.userQuery}`,
-						settings
+						messages,
+						options
 					);
 
 					if (result?.error) {

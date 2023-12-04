@@ -4,6 +4,7 @@ import { Notice } from "obsidian";
 import type DigitalGardener from "../main.js";
 import { DGMessageModal } from "../modals/simple-modal.js";
 import generateFilePropertiesPrompt from "./generate-file-properties.md";
+import { ChatCompletionMessageParam } from "openai/resources/index.js";
 /**
  * Rename a file from it's contents
  * @param plugin The parent plugin
@@ -39,10 +40,13 @@ export function cmdGenerateFileProperties(plugin: DigitalGardener) {
 					);
 
 					const contents = await plugin.app.vault.cachedRead(file);
+					const messages: ChatCompletionMessageParam[] = [
+						{ role: "system", content: prompt },
+						{ role: "user", content: `${contents}` },
+					];
+
 					const result = await plugin.openAI.requestJSON(
-						prompt,
-						contents,
-						settings
+						messages,
 					);
 					console.log(result);
 					window.clearInterval(timer);

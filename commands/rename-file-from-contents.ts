@@ -3,6 +3,7 @@ import { Notice } from "obsidian";
 import { agents } from "../lib/settings.js";
 import type DigitalGardener from "../main.js";
 import renameFileFromContentsPrompt from "./rename-file-from-contents.md";
+import { ChatCompletionMessageParam } from "openai/resources/index.js";
 /**
  * A response from the OpenAI API that contains a filename with the reason and score for it's selection
  */
@@ -59,11 +60,11 @@ export function cmdRenameFileFromContents(plugin: DigitalGardener) {
 					);
 
 					const contents = await plugin.app.vault.cachedRead(file);
-					const result = await plugin.openAI.requestJSON(
-						prompt,
-						contents,
-						settings
-					);
+					const messages: ChatCompletionMessageParam[] = [
+						{ role: "system", content: prompt },
+						{ role: "user", content: `${contents}` },
+					];
+					const result = await plugin.openAI.requestJSON(messages);
 					window.clearInterval(timer);
 					plugin.updateDefaultStatusText();
 

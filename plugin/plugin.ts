@@ -142,7 +142,7 @@ export class DigitalGardener extends Plugin {
 			this.statusBar.setContent("🧑🏼‍🌾 No API Key");
 			return;
 		}
-		this.openAI = createOpenAIClient(openAIAPIKey);
+		this.openAI = createOpenAIClient(this, openAIAPIKey);
 		this.updateDefaultStatusText();
 	}
 
