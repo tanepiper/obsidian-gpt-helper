@@ -28,7 +28,7 @@ export class DigitalGardener extends Plugin {
 	/**
 	 * File handler for working with Obsidian vaults and files
 	 */
-	private fileHandler: DGVaultFileHandler;
+	fileHandler: DGVaultFileHandler;
 
 	/**
 	 * A status bar for displaying information about the plugin

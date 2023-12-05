@@ -1,56 +1,32 @@
 ---
-task: Take the content of the file the user has given you, and come up with some ideas for a file name, a minimuim of 3. The file names must be suitable for Obsidian on all operating systems so can only contain the following - Alphanumeric characters, hyphens/dashes, underscores and spaces.  Spaces and hyphens are prefered.  You do not need to give the file extension as this will be provided by the system, and if you have more than 3 name ideas present them as well
+title: "Rename file from contents"
+task: Your task is to analyze the content of a file provided by the user and suggest suitable file names. Generate a minimum of 3 and a maximum of 6 file names that adhere to Obsidian's compatibility requirements across different operating systems. Focus on using alphanumeric characters, hyphens/dashes, underscores, and spaces, with a preference for spaces and hyphens. For each proposed file name, provide a justification for your choice and a confidence score reflecting how well the name matches the content.
 newFile: false
 output: json
+jsonSchema:
+	type: object
+	properties:
+		filenames: 
+			type: array
+				description: "An array of objects, each containing a file name suggestion and the reasoning behind it."
+				items: 
+					type: object
+					description: "The file rename object"
+					properties:
+						fileName:
+							type: string
+							description: "Required. A valid filename reflecting the note's content, using only alphanumeric characters, hyphens, and spaces. Do not include the file extension."
+						reason:
+							type: string
+							description: "Required. The rationale behind the chosen filename."
+						score:
+							type: number
+							description: "Required. A confidence score between 0 and 1 (in 0.01 increments) indicating the relevance of the filename to the content."
 ---
 
-Below is the example schema for the JSON you will respond with, remember the values provide some instructions for you
+When provided with file content, you will create file name suggestions that are concise, descriptive, and compatible with Obsidian across all operating systems. For each suggestion, you must:
 
-Do not modify the keys as written. The values have the rules for each value, how it should be presented and it's required or optional
-
-```json
-{
-	"filenames": [
-		{
-			"fileName": "One descriptive name of content",
-			"reason": "Give an explination here of why you chose this filename",
-			"score": 0.97
-		},
-		{
-			"fileName": "Another descriptive name of content",
-			"reason": "Give an explination here of why you chose this filename",
-			"score": 0.8
-		},
-		{
-			"fileName": "Yet another descriptive name of content",
-			"reason": "Give an explination here of why you chose this filename",
-			"score": 0.7
-		}
-	]
-}
-```
-
-Here is it's typescript interface
-
-```ts
-/**
- * A response from the OpenAI API that contains a filename with the reason and score for it's selection
- */
-interface DGFileNameResponse {
-	/**
-	 * The filename, it should support all OS with only alphanumeric characters, spaces, hyphens, and underscores.
-	 * Spaces and hyphens are preferred over underscores.
-	 */
-	fileName: string;
-	/**
-	 * The agent reason for selecting this filename
-	 */
-	reason: string;
-	/**
-	 * The confidence score for this filename the AI thinks it should be
-	 */
-	score: number;
-}
-```
-
-If the contents is a summary for example call it "Summary of ...", if it's a list "List of ..." if it's prose or content of a fictional nature "Prose page of ...", Poerty, Technical Article or Chapter, etc - come up with a clear name that reflects the contents and the potential links it contains
+Propose File Names: Generate 3 to 6 file names using alphanumeric characters, hyphens, underscores, and spaces. Prioritize spaces and hyphens for readability.
+Justify Your Choice: For each name, explain why it is suitable for the content. This explanation should reflect your understanding of the file's content and how the name encapsulates its essence.
+Confidence Score: Assign a confidence score from 0 to 1 (in increments of 0.01) for each name. This score reflects your certainty that the name accurately represents the content and is justified.
+This approach ensures that the file names are not only compatible with Obsidian but also meaningful and reflective of the content they represent. Your suggestions should balance creativity with precision, offering clear and logical titles that facilitate easy navigation and retrieval within the user's digital knowledge environment.

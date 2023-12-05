@@ -24,26 +24,21 @@ export async function generateInitialPrompt(
 	let prompt = `${digitalGardenerPrompt}\n\n`;
 	prompt += `${systemPrompt}\n\n`;
 
-	prompt += `Some additional important information:\n\n`;
-	prompt += `Today's date: ${getTodaysDateFormatted()}\n\n`;
-
-	prompt += `The current time: ${new Date().toLocaleTimeString()}\n\n`;
-	prompt += `The current Obsidian vault name: ${plugin.app.vault.getName()}\n\n`;
-	prompt += `The current Obsidian vault config dir is: ${plugin.app.vault.configDir}\n\n`;
-
-	const keys = await plugin.getAllUniqueFrontmatterKeys();
-	const dontReplaceKeys = ["title", "createdAt", "status", "author"];
-	prompt += `Here are all the frontmatter keys available in the current vault, ensure reuse ones that are relevant:\n\n`;
-	prompt += `${JSON.stringify(Array.from(keys), null, 2)}\n\n`;
-	prompt += `IF A KEY ALREADY HAS A VALUE IGNORE IT AND DO NOT REPLACE THE CURRENT VALUE\n\n`;
+	prompt += `Additional Information::\n\n`;
+	prompt += `Current date: ${getTodaysDateFormatted()}\n\n`;
+	prompt += `Current time: ${new Date().toLocaleTimeString()}\n\n`;
 
 	if (options?.includePersonalisation === true) {
-		prompt += `The following is the personalisation information the user have provided:\n\n`;
+		prompt += `The following user-provided personalization details should be considered when generating content:\n\n`;
 		prompt += `Name: ${settings.userName}\n`;
 		prompt += `Pronouns: ${settings.userPronouns}\n`;
 		prompt += `Preferred Language: ${settings.userLanguages}\n`;
 		prompt += `Biograph: ${settings.userBio}\n\n`;
 	}
+
+	const keys = await plugin.getAllUniqueFrontmatterKeys();
+	prompt += `This is a list of all frontmatter properties in the users vault:\n\n`;
+	prompt += `${JSON.stringify(Array.from(keys), null, 2)}\n\n`;
 
 	if (options?.includeFilenames === true) {
 		const allMarkdownFiles = plugin.app.vault.getMarkdownFiles();

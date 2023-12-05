@@ -2,10 +2,11 @@ import { ChatCompletionMessageParam } from "openai/resources/index.js";
 import { agents } from "../lib/settings.js";
 import type DigitalGardener from "../main.js";
 import generateWikiLinksPrompt from "./generate-wiki-links.md";
+import { Notice } from "obsidian";
 
 interface WikiLink {
 	fileName: string;
-	filePath: string;
+	linkLabel: string;
 	reason: string;
 	score: number;
 }
@@ -36,30 +37,45 @@ export function cmdGenerateWikiLinks(plugin: DigitalGardener) {
 						allMarkdownFiles.map((file) => [file.path, file.name])
 					);
 					prompt += `The following is a list of all markdown files in the current Obsidian vault:
-					${JSON.stringify(allMDFileNames, null, 2)}
-					When creating the content, create wikilinks to relevant files, these files exist in the list above
-					Obsidian's [[FILENAME]] WikiLinks to connect the content.`;
+					${JSON.stringify(allMDFileNames, null, 2)}`;
+
+					new Notice(
+						`🧑🏼‍🌾 Digital Gardener\nFinding WikiLinks for ${file.name}`
+					);
+
+					let time = 0;
+					const timer = plugin.registerInterval(
+						window.setInterval(() => {
+							time++;
+							plugin.updateDefaultStatusText(
+								`Finding WikiLinks: ${time}s`
+							);
+						}, 1000)
+					);
 
 					const contents = await plugin.app.vault.cachedRead(file);
 					const messages: ChatCompletionMessageParam[] = [
 						{ role: "system", content: prompt },
 						{ role: "user", content: `${contents}` },
 					];
-					const result = await plugin.openAI.requestJSON(
-						messages
-					);
+					const result = await plugin.openAI.requestJSON(messages);
+					window.clearInterval(timer);
+					plugin.updateDefaultStatusText();
+
 					if (!result?.wikiLinks) {
 						return false;
 					} else if (result.wikiLinks.length > 0) {
-						let outputLinks = "";
-						const wikiLinks = result.wikiLinks.map(
+						console.log(result.wikiLinks);
+						const wikiLinks: string[] = result.wikiLinks.map(
 							(wikiLink: WikiLink) => {
-								const { fileName, filePath, reason, score } =
-									wikiLink;
-								outputLinks += `- [[${filePath}|${fileName}]] (Reason: ${reason}, Relevancy: ${score})\n`;
+								const { fileName, linkLabel, reason, score } = wikiLink;
+								if (file.path.includes(fileName)) {
+									return "";
+								}
+								return `- [[${fileName}|${linkLabel}]] (Reason: ${reason}, Relevancy: ${score})`;
 							}
-						);
-						plugin.appendContentToActiveFile(outputLinks);
+						).filter((link: string) => link !== "");
+						plugin.appendContentToActiveFile(wikiLinks.join("\n"));
 					}
 				}
 				return true;

@@ -45,9 +45,7 @@ export function cmdGenerateFileProperties(plugin: DigitalGardener) {
 						{ role: "user", content: `${contents}` },
 					];
 
-					const result = await plugin.openAI.requestJSON(
-						messages,
-					);
+					const result = await plugin.openAI.requestJSON(messages);
 					console.log(result);
 					window.clearInterval(timer);
 					plugin.updateDefaultStatusText();
@@ -77,17 +75,19 @@ export function cmdGenerateFileProperties(plugin: DigitalGardener) {
 							},
 							async (options) => {
 								if (options.length === 0) {
+									new Notice(
+										`🧑🏼‍🌾 Action Cancelled\n
+										${currentFileName} not modified`
+									);
 									return;
 								}
-								new Notice(
-									`🧑🏼‍🌾 Action Cancelled\n
-									${currentFileName} not modified`
-								);
 
 								const newPropsObject = Object.fromEntries(
 									options.map((option: any) => [
 										option.label,
-										option.value,
+										typeof option.value === "string"
+											? `${option.value}`
+											: option.value,
 									])
 								);
 								await plugin.app.fileManager.processFrontMatter(
