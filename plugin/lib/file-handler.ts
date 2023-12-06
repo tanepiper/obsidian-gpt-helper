@@ -78,8 +78,8 @@ export class DGVaultFileHandler {
 	 * @param path
 	 * @param content
 	 */
-	async createFile(path: string, content: string): Promise<void> {
-		await this.app.vault.create(path, content);
+	async createFile(path: string, content: string): Promise<TFile> {
+		return await this.app.vault.create(path, content);
 	}
 
 	/**

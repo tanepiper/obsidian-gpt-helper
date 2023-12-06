@@ -19,6 +19,7 @@ import {
 } from "./lib/index.js";
 import { createInstaller } from "./lib/install.js";
 import { GPTHelperSettingTab } from "./plugin-settings-tab.js";
+import { CreateNewFileView, DG_CREATE_NEW_FILE_VIEW_TYPE } from "views/create-new-file.js";
 
 /**
  * The Digital Gardener is a plugin for Obsidian that works with OpenAI-compatible GPT APIs to allow
@@ -104,6 +105,11 @@ export class DigitalGardener extends Plugin {
 	private setupViews() {
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new GPTHelperSettingTab(this.app, this));
+
+		this.registerView(
+			DG_CREATE_NEW_FILE_VIEW_TYPE,
+			(leaf) => new CreateNewFileView(leaf, this)
+		);
 
 		this.registerView(
 			DG_CHAT_AGENT_VIEW,
